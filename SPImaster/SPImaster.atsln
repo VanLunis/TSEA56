@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "SPImaster", "SPImaster\SPImaster.cproj", "{D40A0B7C-A613-4DB0-B7F3-DDA8458BB16A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D40A0B7C-A613-4DB0-B7F3-DDA8458BB16A}.Debug|AVR.ActiveCfg = Debug|AVR
+		{D40A0B7C-A613-4DB0-B7F3-DDA8458BB16A}.Debug|AVR.Build.0 = Debug|AVR
+		{D40A0B7C-A613-4DB0-B7F3-DDA8458BB16A}.Release|AVR.ActiveCfg = Release|AVR
+		{D40A0B7C-A613-4DB0-B7F3-DDA8458BB16A}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
