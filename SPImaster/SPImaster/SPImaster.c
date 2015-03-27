@@ -16,13 +16,27 @@ void init_master(void)
 	SPSR = (0<<SPI2X);
 	DDRB = (1<<DDB7)|(1<<DDB5)|(1<<DDB4);
 	PORTB = (1<<PORTB4); // Pulling SS2 high
+	
+	// IRQ0 activated on rising edge
+	EICRA = (1<<ISC01)|(1<<ISC00);
+	// Enable IRQ0
+	EIMSK = (1<<INT0);
+	
+	// Let PA be outputs for testing
+	DDRA = 0xFF;
 };
 
-void send_to_slave1(volatile char send_data)
+void send_to_slave2(volatile char send_data)
 {
 	PORTB = (0<<PORTB4); // Pulling SS2 low
 	SPDR = send_data;
 };
+
+void receive_from_slave2(void)
+{
+	send_to_slave2(0xAA);	
+};
+
 
 // todo: functions for transmit and receive
 
@@ -32,7 +46,7 @@ int main(void)
 	sei();
 	
 	// 
-	send_to_slave1(0xAA);
+	// send_to_slave2(0xAA);
 	//
 	
 	while(1)
@@ -44,12 +58,11 @@ int main(void)
 
 ISR(INT0_vect)
 {
-	;
+	receive_from_slave2();
 }
 
 ISR(SPI_STC_vect)
 {
 	PORTB = (1<<PORTB4); // Pulling SS2 high
-	DDRA = 0xFF;
 	PORTA = SPDR;
 }
