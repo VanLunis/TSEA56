@@ -46,7 +46,7 @@ int main(void)
 	sei();
 	
 	// 
-	// send_to_slave2(0xAA);
+	send_to_slave2(0xAA);
 	//
 	
 	while(1)
