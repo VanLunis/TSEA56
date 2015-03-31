@@ -1,3 +1,6 @@
+SPImaster/SPImaster/Debug/
+SPIslave2/SPIslave2/Debug/
+
 *.hex
 *.d
 *.eep
