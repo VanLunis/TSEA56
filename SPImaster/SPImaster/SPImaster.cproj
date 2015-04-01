@@ -98,7 +98,7 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="master_buffer.h">
+    <Compile Include="buffer.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="SPImaster.c">

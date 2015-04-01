@@ -9,10 +9,13 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include "buffer.h"
 #define F_CPU = 16000000UL
 
-volatile int slave_ready = 1;
+volatile int slave2_ready = 1;
 volatile int failed_attempts = 0;
+
+struct data_buffer slave2_buffer;
 
 void init_master(void)
 {
@@ -27,13 +30,24 @@ void init_master(void)
 	// Enable IRQ0
 	EIMSK = (1<<INT0);
 	
+	// Init data buffers in master
+	buffer_init(&slave2_buffer);
+	
 	// Let PA be outputs for testing
 	DDRA = 0xFF;
 };
 
+/*
+void send_to_slave2()
+{
+	slave2_ready = 0;
+	PORTB = (0<<PORTB4); // Pulling SS2 low
+	
+};*/
+
 void send_to_slave2(volatile char send_data)
 {
-	slave_ready = 0;
+	slave2_ready = 0;
 	PORTB = (0<<PORTB4); // Pulling SS2 low
 	SPDR = send_data;
 	_delay_us(20);
@@ -50,11 +64,16 @@ int main(void)
 	init_master();
 	sei();
 	
-	for (int i=0; i<255; i++)
+	
+	for(int i=0;i<255;i++)
 	{
-		if(slave_ready==1)
+		add_to_buffer(&slave2_buffer,i,i);
+	}
+	while(buffer_empty(&slave2_buffer)==0)
+	{
+		if(slave2_ready==1)
 		{
-			send_to_slave2(i);	
+			send_from_buffer(&slave2_buffer);
 		}
 		else
 		{
@@ -72,7 +91,7 @@ int main(void)
 
 ISR(INT0_vect)
 {
-	slave_ready = 1;
+	slave2_ready = 1;
 }
 
 ISR(SPI_STC_vect)
