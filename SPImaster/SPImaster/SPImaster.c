@@ -15,6 +15,7 @@
 volatile int slave2_ready = 1;
 volatile int failed_attempts = 0;
 volatile int transmission_status = 0; // 0 to send .type, 1 to send .val, 2 when both sent
+volatile int counter=0;
 
 struct data_buffer slave2_buffer;
 
@@ -38,6 +39,12 @@ void init_master(void)
 	DDRA = 0xFF;
 };
 
+void send(volatile char send_data)
+{
+	slave2_ready = 0;
+	SPDR = send_data;
+	_delay_us(30);
+};
 
 void send_to_slave2()
 {
@@ -60,6 +67,8 @@ void send_to_slave2()
 			else if(transmission_status == 2) // Full send_byte transmitted correctly
 			{
 				discard_from_buffer(&slave2_buffer); // Discard byte from buffer when full transmission succeeded
+				counter++;
+				PORTA = counter;
 				transmission_status = 0;
 				break;
 			}
@@ -77,12 +86,7 @@ void send_to_slave2()
 	
 };
 
-void send(volatile char send_data)
-{
-	slave2_ready = 0;
-	SPDR = send_data;
-	_delay_us(30);
-};
+
 /*
 void receive_from_slave2(void)
 {
@@ -95,17 +99,17 @@ int main(void)
 	sei();
 	
 	
-	for(int i=0;i<255;i++)
+	for(int i=1; i<32; i++)
 	{
 		add_to_buffer(&slave2_buffer,i,i);
 	}
 	
 	while(buffer_empty(&slave2_buffer)==0)
-	{
+	{	
 		send_to_slave2();
 	}
 	
-	PORTA = failed_attempts;
+	
 		
 	while(1)
     {

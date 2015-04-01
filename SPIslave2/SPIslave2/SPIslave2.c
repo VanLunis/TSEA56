@@ -9,6 +9,12 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "buffer.h"
+volatile struct data_buffer receive_buffer;
+//volatile int mode = 0; //0 undefined, 1 reading, 2 sending. 
+volatile int transmission_status = 0;
+volatile struct data_byte temp_data;
+volatile int counter = 0;
 
 void init_slave2(void)
 {
@@ -18,6 +24,8 @@ void init_slave2(void)
 	
 	// Let PA be outputs for testing
 	DDRA = 0xFF;
+	//Initiate the reception buffer.
+	buffer_init(&receive_buffer);
 };
 
 // todo: functions for transmit and receive
@@ -27,6 +35,21 @@ void send_to_master(volatile char send_data)
 	SPDR = send_data;	
 };
 
+void receive_data()
+{
+	if(transmission_status == 0)
+	{
+		temp_data.type=SPDR;
+		transmission_status = 1;
+	}
+	else if(transmission_status == 1)
+	{
+		temp_data.val=SPDR;
+		add_to_buffer(&receive_buffer, temp_data.type, temp_data.val);	
+		transmission_status = 0;	
+	}
+}
+
 
 int main(void)
 {
@@ -35,13 +58,16 @@ int main(void)
 	
     while(1)
     {
-        ;
-    }
+		PORTA = amount_stored(&receive_buffer);
+	}
 }
 
 ISR(SPI_STC_vect)
 {
+	counter++;
+	
 	PORTB = (0<<PORTB3);
 	PORTB = (1<<PORTB3);
-	PORTA = SPDR;
+
+	receive_data();		
 }
