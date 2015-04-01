@@ -58,7 +58,7 @@ void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 	}
 };
 
-/*
+
 struct data_byte fetch_from_buffer(struct data_buffer* my_buffer)
 {
 	if(buffer_empty(my_buffer) == 0)
@@ -76,9 +76,9 @@ void discard_from_buffer(struct data_buffer* my_buffer)
 		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
 		my_buffer->full_revolution = 0;
 	}
-};*/
+};
 
-
+/*
 void send_from_buffer(struct data_buffer* my_buffer)
 {
 	//we allow data to be sent if the buffer is non-empty.
@@ -89,7 +89,7 @@ void send_from_buffer(struct data_buffer* my_buffer)
 		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
 		my_buffer->full_revolution = 0;
 	}
-};
+};*/
 
 
 #endif
