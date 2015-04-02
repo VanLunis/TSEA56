@@ -1,7 +1,7 @@
 /*
  * Test1masterDatabuss.c
  *
- * Created: 31-03-2015
+ * Created: 02-04-2015
  * Author: Frida Sundberg, Markus Petersson
  * 
  */ 
@@ -18,6 +18,7 @@ volatile int transmission_status = 0; // 0 to send .type, 1 to send .val, 2 when
 volatile int counter=0;
 
 struct data_buffer slave2_buffer;
+struct data_buffer receive_buffer;
 
 void init_master(void)
 {
@@ -27,6 +28,10 @@ void init_master(void)
 	DDRB = (1<<DDB7)|(1<<DDB5)|(1<<DDB4);
 	PORTB = (1<<PORTB4); // Pulling SS2 high
 	
+	// PC0 output, PD7 output (ext int to slave 2 to change receive/send-variable in slave 2)
+	DDRC = (1<<DDC0);
+	DDRD = (1<<DDD7);
+	
 	// IRQ0 activated on rising edge
 	EICRA = (1<<ISC01)|(1<<ISC00);
 	// Enable IRQ0
@@ -34,6 +39,7 @@ void init_master(void)
 	
 	// Init data buffers in master
 	buffer_init(&slave2_buffer);
+	buffer_init(&receive_buffer);
 	
 	// Let PA be outputs for testing
 	DDRA = 0xFF;
@@ -48,6 +54,8 @@ void send(volatile char send_data)
 
 void send_to_slave2()
 {
+	PORTC = (0<<PORTC0); // Order slave 2 to adapt receive mode
+	PORTC = (1<<PORTC0);
 	struct data_byte send_byte = fetch_from_buffer(&slave2_buffer); // Fetch one byte from buffer without discarding
 	transmission_status = 0; // Integer to indicate how far the send process has proceeded, updated when acknowledgment received from slave (in external interrupt) 
 	volatile int local_failed_attempts = 0; 
@@ -77,8 +85,9 @@ void send_to_slave2()
 		{
 			failed_attempts++;
 			local_failed_attempts++;
-			if(local_failed_attempts > 5) // Five tries allowed before leaving function
+			if(local_failed_attempts > 10) // Ten tries allowed before leaving function
 			{
+				transmission_status = 0;
 				break;
 			}
 		}
@@ -109,11 +118,10 @@ int main(void)
 		send_to_slave2();
 	}
 	
-	
 		
 	while(1)
     {
-       
+		;
     }
 }
 
