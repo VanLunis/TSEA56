@@ -1,7 +1,7 @@
 /*
  * Test1slave2Databuss.c
  *
- * Created: 31-03-2015
+ * Created: 02-04-2015
  * Author: Frida Sundberg, Markus Petersson
  * 
  */ 
@@ -9,6 +9,13 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "buffer.h"
+volatile struct data_buffer receive_buffer;
+volatile struct data_buffer send_buffer;
+volatile int mode = 0; // 0 receiving, 1 sending. 
+volatile int transmission_status = 0;
+volatile struct data_byte temp_data;
+volatile int counter = 0;
 
 void init_slave2(void)
 {
@@ -16,32 +23,96 @@ void init_slave2(void)
 	DDRB = (1<<DDB6)|(1<<DDB3);
 	PINB = (1<<PINB4);
 	
+	// IRQ1 and IRQ0 activated on rising edge
+	EICRA = (1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
+	// Enable IRQ1 and IRQ0
+	EIMSK = (1<<INT1)|(1<<INT0);
+	
 	// Let PA be outputs for testing
 	DDRA = 0xFF;
+	//Initiate the buffers.
+	buffer_init(&receive_buffer);
+	buffer_init(&send_buffer);
+	
 };
 
 // todo: functions for transmit and receive
 
-void send_to_master(volatile char send_data)
+void send_to_master(struct data_buffer* my_buffer)
 {
-	SPDR = send_data;	
+
+		if(transmission_status==0)
+		{
+			SPDR = fetch_from_buffer(my_buffer).type;
+		}
+		else if(transmission_status==1)
+		{
+			SPDR = fetch_from_buffer(my_buffer).val;
+		}
+		else if(transmission_status==2)
+		{
+			discard_from_buffer(my_buffer);
+			transmission_status=0;
+		}
+	
+	
 };
+
+void receive_data(struct data_buffer* my_buffer)
+{
+	if(transmission_status == 0)
+	{
+		temp_data.type = SPDR;
+		transmission_status = 1;
+	}
+	else if(transmission_status == 1)
+	{
+		temp_data.val = SPDR;
+		add_to_buffer(my_buffer, temp_data.type, temp_data.val);	
+		transmission_status = 0;	
+	}
+}
 
 
 int main(void)
 {
 	init_slave2();
 	sei();
-	
+	add_to_buffer(&send_buffer, 0xAA, 0xAA);
+	add_to_buffer(&send_buffer, 0xAA, 0xAA);
+	add_to_buffer(&send_buffer, 0xAA, 0xAA);
+	add_to_buffer(&send_buffer, 0xAA, 0xAA);
+	add_to_buffer(&send_buffer, 0xAA, 0xAA);
     while(1)
     {
-        ;
-    }
+		PORTA = amount_stored(&send_buffer);
+	}
 }
 
 ISR(SPI_STC_vect)
 {
+	counter++;
+	transmission_status++;//Control int to remember where in the current transmission we are currently at. Should be reset when a full data_byte has been transmitted.
+	
 	PORTB = (0<<PORTB3);
-	PORTB = (1<<PORTB3);
-	PORTA = SPDR;
+	PORTB = (1<<PORTB3);		
+	if(mode==0)
+	{
+		receive_data(&receive_buffer);
+	}
+	else if(mode==1)
+	{
+		send_to_master(&send_buffer);
+	}
+}
+
+ISR(INT0_vect)
+{
+	mode = 0;
+}
+
+ISR(INT1_vect)
+{
+	mode = 1;
+	SPDR=fetch_from_buffer(&send_buffer).type;
 }
