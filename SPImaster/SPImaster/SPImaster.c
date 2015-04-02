@@ -16,6 +16,7 @@ volatile int slave2_ready = 1;
 volatile int failed_attempts = 0;
 volatile int transmission_status = 0; // 0 to send .type, 1 to send .val, 2 when both sent
 volatile int counter=0;
+volatile struct data_byte temp_data;
 
 struct data_buffer slave2_buffer;
 struct data_buffer receive_buffer;
@@ -106,18 +107,79 @@ void send(struct data_buffer* my_buffer, int slave)
 };
 
 
-/*
-void receive_from_slave2(void)
+
+void receive(struct data_buffer* my_buffer, int slave)
 {
-	send_to_slave2(0xAA);	
-};*/
+	int local_failed_attempts = 0;
+	int *current_slave_ready;
+	if(slave == 2)
+	{
+		current_slave_ready = &slave2_ready;
+		PORTD = (0<<PORTD7); // Order slave 2 to adapt send mode
+		PORTD = (1<<PORTD7);
+	}
+	transmission_status=0;
+	counter=0;
+	while(1)
+	{
+		if(slave=2)
+		{
+			PORTB = (0<<PORTB4); // Pulling SS2 low	
+		}
+		if(*current_slave_ready==1)
+		{
+			if(transmission_status == 0)
+			{
+				*current_slave_ready=0;
+				SPDR = 0x00;
+				_delay_us(30);
+			}
+			else if(transmission_status == 1)
+			{
+				temp_data.type = SPDR;
+				*current_slave_ready=0;
+				SPDR = 0x00;
+				_delay_us(30);
+				
+			}
+			else if(transmission_status==2)
+			{
+				temp_data.val = SPDR;
+				transmission_status=0;
+				if(temp_data.type==0 && temp_data.val==0)
+				{
+					
+				}
+				else
+				{
+					add_to_buffer(my_buffer, temp_data.type, temp_data.val);	
+				}
+				_delay_us(30);
+				break;
+				
+			}
+		}
+		else
+		{
+			local_failed_attempts++;
+			if(local_failed_attempts>20)
+			{
+				transmission_status=0;
+				break;
+			}
+		}
+	}
+};
 
 int main(void)
 {
 	init_master();
 	sei();
 	
+	receive(&receive_buffer,2);
+	receive(&receive_buffer,2);
 	
+/*	
 	for(int i=1; i<32; i++)
 	{
 		add_to_buffer(&slave2_buffer,i,i);
@@ -127,11 +189,12 @@ int main(void)
 	{	
 		send_to_slave2();
 	}
-	
+	*/
+
 		
 	while(1)
     {
-		;
+		PORTA=amount_stored(&receive_buffer);
     }
 }
 

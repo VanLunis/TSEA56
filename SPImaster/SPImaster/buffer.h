@@ -2,6 +2,7 @@
 #define HEADER_FILE
 #define BUFFER_SIZE 60
 
+
 struct data_byte
 {
 	char type;
@@ -57,6 +58,18 @@ void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 		//PORTA=(char)my_buffer->full_revolution;
 	}
 };
+
+int amount_stored(struct data_buffer* my_buffer)
+{
+	if(my_buffer->head <= my_buffer->tail)
+	{
+		return ((my_buffer->tail) - (my_buffer->head));
+	}
+	else
+	{
+		return(BUFFER_SIZE - my_buffer->head + my_buffer->tail);
+	}
+}
 
 
 struct data_byte fetch_from_buffer(struct data_buffer* my_buffer)
