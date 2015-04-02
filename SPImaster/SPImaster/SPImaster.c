@@ -45,36 +45,46 @@ void init_master(void)
 	DDRA = 0xFF;
 };
 
-void send(volatile char send_data)
-{
-	slave2_ready = 0;
-	SPDR = send_data;
-	_delay_us(30);
-};
-
 void send_to_slave2()
 {
-	PORTC = (0<<PORTC0); // Order slave 2 to adapt receive mode
-	PORTC = (1<<PORTC0);
-	struct data_byte send_byte = fetch_from_buffer(&slave2_buffer); // Fetch one byte from buffer without discarding
+	send(&slave2_buffer, 2);
+};
+
+void send(struct data_buffer* my_buffer, int slave)
+{
+	int *current_slave_ready;
+	if(slave == 2)
+	{
+		current_slave_ready = &slave2_ready;
+		PORTC = (0<<PORTC0); // Order slave 2 to adapt receive mode
+		PORTC = (1<<PORTC0);	
+	}
+	struct data_byte send_byte = fetch_from_buffer(my_buffer); // Fetch one byte from buffer without discarding
 	transmission_status = 0; // Integer to indicate how far the send process has proceeded, updated when acknowledgment received from slave (in external interrupt) 
 	volatile int local_failed_attempts = 0; 
 	while(1)
 	{
-		PORTB = (0<<PORTB4); // Pulling SS2 low
-		if(slave2_ready==1)
+		if(slave==2)
+		{
+			PORTB = (0<<PORTB4); // Pulling SS2 low	
+		}
+		if(*current_slave_ready==1)
 		{
 			if(transmission_status == 0) // Ready to send .type part
 			{
-				send(send_byte.type);
+				*current_slave_ready = 0;
+				SPDR = send_byte.type;
+				_delay_us(30);
 			}
 			else if(transmission_status == 1) // Ready to send .val part
 			{
-				send(send_byte.val);	
+				*current_slave_ready = 0;
+				SPDR = send_byte.val;
+				_delay_us(30);	
 			}
 			else if(transmission_status == 2) // Full send_byte transmitted correctly
 			{
-				discard_from_buffer(&slave2_buffer); // Discard byte from buffer when full transmission succeeded
+				discard_from_buffer(my_buffer); // Discard byte from buffer when full transmission succeeded
 				counter++;
 				PORTA = counter;
 				transmission_status = 0;
