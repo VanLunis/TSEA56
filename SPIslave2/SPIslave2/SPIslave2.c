@@ -30,10 +30,7 @@ void init_slave2(void)
 	
 	// Let PA be outputs for testing
 	DDRA = 0xFF;
-<<<<<<< HEAD
 	
-=======
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 	//Initiate the buffers.
 	buffer_init(&receive_buffer);
 	buffer_init(&send_buffer);
@@ -44,27 +41,17 @@ void init_slave2(void)
 
 void send_to_master(struct data_buffer* my_buffer)
 {
-<<<<<<< HEAD
 		//if Transmission not yet started: fetch type and put it in SPDR.
-=======
-
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 		if(transmission_status==0)
 		{
 			SPDR = fetch_from_buffer(my_buffer).type;
 		}
-<<<<<<< HEAD
 		//if Type already sent: fetch val and put it in SPDR.
-=======
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 		else if(transmission_status==1)
 		{
 			SPDR = fetch_from_buffer(my_buffer).val;
 		}
-<<<<<<< HEAD
 		//if the master has accepted both bytes that were sent: discard the data_byte from the buffer.
-=======
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 		else if(transmission_status==2)
 		{
 			discard_from_buffer(my_buffer);
@@ -74,7 +61,6 @@ void send_to_master(struct data_buffer* my_buffer)
 	
 };
 
-<<<<<<< HEAD
 //Method to receive a data_byte. Called when SPI interrupt has occurred.
 void receive_data(struct data_buffer* my_buffer)
 {
@@ -97,29 +83,11 @@ void receive_data(struct data_buffer* my_buffer)
 //////////////////////////////////////////////////////////////////////
 //----------------------------  MAIN -------------------------------//
 //////////////////////////////////////////////////////////////////////
-=======
-void receive_data(struct data_buffer* my_buffer)
-{
-	if(transmission_status == 0)
-	{
-		temp_data.type = SPDR;
-		transmission_status = 1;
-	}
-	else if(transmission_status == 1)
-	{
-		temp_data.val = SPDR;
-		add_to_buffer(my_buffer, temp_data.type, temp_data.val);	
-		transmission_status = 0;	
-	}
-}
-
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 
 int main(void)
 {
 	init_slave2();
 	sei();
-<<<<<<< HEAD
 	/*add_to_buffer(&send_buffer, 0xAA, 0xAA);
 	add_to_buffer(&send_buffer, 0xAA, 0xAA);
 	add_to_buffer(&send_buffer, 0xAA, 0xAA);
@@ -128,26 +96,12 @@ int main(void)
     while(1)
     {
 		//PORTA = amount_stored(&receive_buffer);
-=======
-	add_to_buffer(&send_buffer, 0xAA, 0xAA);
-	add_to_buffer(&send_buffer, 0xAA, 0xAA);
-	add_to_buffer(&send_buffer, 0xAA, 0xAA);
-	add_to_buffer(&send_buffer, 0xAA, 0xAA);
-	add_to_buffer(&send_buffer, 0xAA, 0xAA);
-    while(1)
-    {
-		PORTA = amount_stored(&send_buffer);
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 	}
 }
 
 ISR(SPI_STC_vect)
 {
-	counter++;
-	transmission_status++;//Control int to remember where in the current transmission we are currently at. Should be reset when a full data_byte has been transmitted.
-	
 	PORTB = (0<<PORTB3);
-<<<<<<< HEAD
 	PORTB = (1<<PORTB3);
 	//Depending on the current mode: do things.		
 	if(mode == 0)
@@ -174,26 +128,4 @@ ISR(INT1_vect)
 	transmission_status = 0;
 	mode = 1;
 	SPDR = fetch_from_buffer(&send_buffer).type;
-=======
-	PORTB = (1<<PORTB3);		
-	if(mode==0)
-	{
-		receive_data(&receive_buffer);
-	}
-	else if(mode==1)
-	{
-		send_to_master(&send_buffer);
-	}
-}
-
-ISR(INT0_vect)
-{
-	mode = 0;
-}
-
-ISR(INT1_vect)
-{
-	mode = 1;
-	SPDR=fetch_from_buffer(&send_buffer).type;
->>>>>>> b8de8341bdcc539bca67742b79802c3745fdb603
 }
