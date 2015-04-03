@@ -13,12 +13,11 @@ int main(void)
 	
 	PORTD = 0x00;
 	
-
 	
 	/*
 	int pcount = 0;
 	int *adcselect = 0;
-	*/
+	
 	  
 	//TIMER-FREQ = CPU FREKVENS 
 	TCCR0A =0; //(0<<CS02 | 0<<CS01 | 1<<CS00);
@@ -32,7 +31,7 @@ int main(void)
 	TCCR0B= (1<<CS21|1<<CS20); 
 	TIMSK0 |= (1<<OCIE0A);// enable timer compare interupt
 	
-	
+	*/
 	//PORTD = 0x00;
 
 	
@@ -62,38 +61,50 @@ int main(void)
 	
 	MCUCR = 1<<ISC01 | 1<<ISC00;
 	
-	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR;
+	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
 	
-	ADCSRA = 1<<ADEN | 1<<ADIE | 0<<ADPS2 | 0<<ADPS1 | 0<<ADPS0;
+	ADCSRA = 0 << ADIF | 1<<ADEN | 1<<ADIE | 0<<ADPS2 | 0<<ADPS1 | 0<<ADPS0 | 1<<ADATE;
 	
 	//DDRB = 0xFF; //enl. AVR-tutorial DDRB = 1 << PD2
 	
 
 	sei();
 	
+	ADCSRA = 1<<ADEN | 1<<ADSC ; // start ADC conversion
+	
+	while(!(ADCSRA & (1<<ADIF)))
+	{
+		PORTD = 0x00;
+	}
+	PORTD = ADCH;
+
+	
+	/*
 	while(1)
 	{ 
-		if (ADCSRA && (1<<ADIF))
+		if (ADCSRA == 1<<ADIF)
 			{
 				ADCSRA = 0 << ADIF;
-				PORTD = ADCH;
-				/*sens0[12] = ADCL;
+				//PORTD = ADCH;
+				PORTD  = 0xFF;
+				sens0[12] = ADCL;
 				PORTD = sens0[12];			
 				if (i == 25)
 				{
 					//INSERT INSERTION SORT
 					PORTD = sens0[12];
 					while(i > 0){
-						i--;
+						i--;,
 						sens0[i]=0;
 					}
 					
-				}*/
+				}
 			}
 			else{
 				PORTD = 0x00;
 			}
 	}
+	*/
 	
 }
 	
@@ -139,6 +150,7 @@ int main(void)
 
 
 ISR(TIMER0_COMPA_vect){
+	//PORTD = 0x00;
 		ADCSRA = 1<<ADEN | 1<<ADSC ; // start ADC conversion
 }
 

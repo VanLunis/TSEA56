@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include<stdio.h>
+
 double lookuptable[5][33];
 
 lookuptable[0] = [3.071, 2.671, 2.215, 1.898, 1.662, 1.476, 1.323, 1.225, 1.102, 1.041, 0.964, 0.899, 0.864, 0.816, 0.773, 0.741, 0.704, 0.664, 0.63, 0.592, 0.575, 0.554, 0.551, 0.517, 0.493, 0.483, 0.454, 0.45, 0.45, 0.423, 0.405, 0.405, 0.388];
@@ -6,8 +10,13 @@ lookuptable[2] = [3.033, 2.605, 2.164, 1.862, 1.61, 1.443, 1.299, 1.175, 1.08, 1
 lookuptable[3] = [3.105, 2.753, 2.297, 1.988, 1.74, 1.554, 1.414, 1.284, 1.17, 1.083, 1.011, 0.954, 0.898, 0.834, 0.796, 0.753, 0.718, 0.674, 0.64, 0.615, 0.579, 0.554, 0.551, 0.518, 0.495, 0.485, 0.454, 0.452, 0.423, 0.424, 0.405, 0.387, 0.387];
 lookuptable[4] = [3.05, 2.711, 2.265, 1.961, 1.703, 1.488, 1.36, 1.219, 1.101, 1.027, 0.957, 0.898, 0.84, 0.775, 0.742, 0.707, 0.67, 0.619, 0.582, 0.555, 0.553, 0.521, 0.504, 0.586, 0.458, 0.452, 0.43, 0.413, 0.413, 0.39, 0.389, 0.371, 0.35];
 
+int realdistance = [3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35];
 int modifieddistance = [15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175];
 
+		
+		
+		
+		
 lookup (double voltage, int sensorindex){ 
 	int i;
 	while(voltage < lookuptable[sensorindex][i])
@@ -15,6 +24,6 @@ lookup (double voltage, int sensorindex){
 		i++;
 	}
 	P = (lookuptable[sensorindex][i-1] - voltage)/(lookuptable[sensorindex][i-1]-lookuptable[sensorindex][i]);
-	distance = 5*(P*modifieddistance([i-1]+(1-P)*modifieddistance);
+	distance = (P*modifieddistance([i-1]+(1-P)*modifieddistance);
 	return distance;
 }
