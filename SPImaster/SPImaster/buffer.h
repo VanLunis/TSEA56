@@ -1,4 +1,4 @@
-﻿#ifndef HEADER_FILE
+#ifndef HEADER_FILE
 #define HEADER_FILE
 #define BUFFER_SIZE 60
 
