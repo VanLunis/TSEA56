@@ -2,7 +2,6 @@
 #define HEADER_FILE
 #define BUFFER_SIZE 60
 
-
 struct data_byte
 {
 	char type;
@@ -58,7 +57,6 @@ void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 		//PORTA=(char)my_buffer->full_revolution;
 	}
 };
-
 int amount_stored(struct data_buffer* my_buffer)
 {
 	if(my_buffer->head <= my_buffer->tail)
@@ -77,7 +75,7 @@ struct data_byte fetch_from_buffer(struct data_buffer* my_buffer)
 	if(buffer_empty(my_buffer) == 0)
 	{
 		return my_buffer->contents[my_buffer->head];
-	} 
+	}
 	return null_data_byte;
 };
 
@@ -90,19 +88,6 @@ void discard_from_buffer(struct data_buffer* my_buffer)
 		my_buffer->full_revolution = 0;
 	}
 };
-
-/*
-void send_from_buffer(struct data_buffer* my_buffer)
-{
-	//we allow data to be sent if the buffer is non-empty.
-	if(buffer_empty(my_buffer)==0)
-	{
-		send_to_slave2(my_buffer->contents[my_buffer->head].type);
-		send_to_slave2(my_buffer->contents[my_buffer->head].val);
-		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
-		my_buffer->full_revolution = 0;
-	}
-};*/
 
 
 #endif

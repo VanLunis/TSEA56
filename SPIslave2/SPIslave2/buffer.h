@@ -89,18 +89,5 @@ void discard_from_buffer(struct data_buffer* my_buffer)
 	}
 };
 
-/*
-void send_from_buffer(struct data_buffer* my_buffer)
-{
-	//we allow data to be sent if the buffer is non-empty.
-	if(buffer_empty(my_buffer)==0)
-	{
-		send_to_slave2(my_buffer->contents[my_buffer->head].type);
-		send_to_slave2(my_buffer->contents[my_buffer->head].val);
-		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
-		my_buffer->full_revolution = 0;
-	}
-};*/
-
 
 #endif
