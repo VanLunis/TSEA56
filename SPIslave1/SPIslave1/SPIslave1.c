@@ -1,7 +1,7 @@
 /*
  * Test1slave2Databuss.c
  *
- * Created: 15-04-2015
+ * Last edited: 15-04-2015
  * Author: Frida Sundberg, Markus Petersson
  * 
  */ 

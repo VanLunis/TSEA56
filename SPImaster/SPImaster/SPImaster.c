@@ -1,7 +1,7 @@
 /*
  * Test1masterDatabuss.c
  *
- * Created: 13-04-2015
+ * Last edited: 15-04-2015
  * Author: Frida Sundberg, Markus Petersson
  * 
  */ 
@@ -104,10 +104,6 @@ void send(struct data_buffer* my_buffer, int slave)
 				discard_from_buffer(my_buffer); // Discard byte from buffer when full transmission succeeded
 				PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
 				transmission_status = 0;
-				///////////////////////// TEST ////////////////////////////////////////
-				counter++;
-				PORTA = counter;			
-				///////////////////////////////////////////////////////////////////////
 				break;
 			}
 		}
@@ -249,21 +245,11 @@ int main(void)
 	{	
 		send_to_slave2();
 	}
-	
-	for (int i=1; i<3; i++)
-	{
-		receive_from_slave1();
-	}
-
-	while(buffer_empty(&slave2_buffer) == 0)
-	{
-		send_to_slave2();
-	}
 ///////////////////////////////////////////////////////////////////////	
 		
 	while(1)
     {
-		;
+		PORTA = amount_stored(&slave2_buffer);
     }
 }
 

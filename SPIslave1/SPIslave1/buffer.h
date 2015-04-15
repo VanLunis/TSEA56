@@ -1,6 +1,14 @@
-﻿#ifndef HEADER_FILE
+﻿/*
+ * buffer.h
+ *
+ * Last edited: 15-04-2015
+ * Author: Frida Sundberg, Markus Petersson
+ * 
+ */ 
+
+#ifndef HEADER_FILE
 #define HEADER_FILE
-#define BUFFER_SIZE 60
+#define BUFFER_SIZE 255
 
 struct data_byte
 {
@@ -61,8 +69,14 @@ int amount_stored(struct data_buffer* my_buffer)
 {
 	if(my_buffer->head <= my_buffer->tail)
 	{
-		return ((my_buffer->tail) - (my_buffer->head));
+		if(my_buffer->full_revolution==0)
+		{
+			return ((my_buffer->tail) - (my_buffer->head));
+		}
+		return BUFFER_SIZE;
+		
 	}
+	
 	else
 	{
 		return(BUFFER_SIZE - my_buffer->head + my_buffer->tail);
