@@ -52,8 +52,11 @@ void move_arm();
 int main(void)
 {
     
+    
     // initialize:
     init();
+    volatile double e; // 8bits instead?
+    volatile double alpha; // 8bits instead?
     
     for (;;)
     {
@@ -64,7 +67,6 @@ int main(void)
         e_prior = local_e;
         alpha_prior = local_alpha;
     }
-    
     
 }
 
