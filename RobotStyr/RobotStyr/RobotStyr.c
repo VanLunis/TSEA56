@@ -33,8 +33,9 @@ volatile int counter = 0;
 volatile char e = 0; // Position error
 volatile char alpha = 0; // Angle error
 
-// Communication functions:
 void init_control_module(void);
+
+// Communication functions:
 void send_to_master(struct data_buffer* my_buffer);
 void receive_from_master(struct data_buffer* my_buffer);
 
@@ -72,6 +73,9 @@ int main(void)
 		
     for(;;)
     {
+///////////////////////// TEST TEST TEST /////////////////////////
+		PORTA = amount_stored(&receive_buffer);
+//////////////////////////////////////////////////////////////////
 		local_e = e;
 		local_alpha = alpha;
 		u = controller(local_e, local_alpha, e_prior, alpha_prior);
@@ -87,7 +91,7 @@ int main(void)
 ISR(SPI_STC_vect)
 {
 	PORTB = (1<<PORTB3);
-	PORTB = (0<<PORTB3);// OBS changed
+	PORTB = (0<<PORTB3);// OBS changed order so low when not active
 	//Depending on the current mode: do things.		
 	if(mode == 0)
 	{
@@ -152,6 +156,10 @@ void init_control_module(void)
     DDRC = (1 << DDC0) | (1 << DDC1);
     // Initiate gear as 11: straight forward
     PORTC = (1<<PORTC1) | (1<<PORTC0);
+	
+///////////////////////// TEST TEST TEST /////////////////////////
+	DDRA = 0xFF;
+//////////////////////////////////////////////////////////////////	
 	
 };
 

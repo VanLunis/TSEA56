@@ -44,7 +44,17 @@ int main(void)
 	init_master();
 	sei();	
 
-while(1)
+	for(int i=1; i<3; i++)
+	{
+		add_to_buffer(&control_buffer, i, i);
+	}
+	
+	while (!buffer_empty(&control_buffer))
+	{
+		send_to_control();
+	}
+
+	while(1)
     {
 		;
     }
@@ -90,12 +100,15 @@ void init_master(void)
 	EICRA = (1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
 	// Enable IRQ1 and IRQ0
 	EIMSK = (1<<INT1)|(1<<INT0);
-	// IRQ0 activated on rising edge
 	
 	// Init data buffers in master
 	buffer_init(&sensor_buffer);
 	buffer_init(&control_buffer);
 	buffer_init(&pc_buffer);
+	
+///////////////////////// TEST TEST TEST /////////////////////////
+	DDRA = 0xFF;
+//////////////////////////////////////////////////////////////////		
 
 };
 
@@ -147,6 +160,10 @@ void send(struct data_buffer* my_buffer, int slave)
 				discard_from_buffer(my_buffer); // Discard byte from buffer when full transmission succeeded
 				PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
 				transmission_status = 0;
+///////////////////////// TEST TEST TEST /////////////////////////
+				counter++;
+				PORTA = counter;
+//////////////////////////////////////////////////////////////////
 				break;
 			}
 		}
