@@ -1,5 +1,6 @@
 /*
  * Test1slave2Databuss.c
+ * (Control Module)
  *
  * Last edited: 15-04-2015
  * Author: Frida Sundberg, Markus Petersson
@@ -17,7 +18,28 @@ volatile int transmission_status = 0;
 volatile struct data_byte temp_data;
 volatile int counter = 0;
 
-void init_slave2(void)
+void init_control_module(void);
+void send_to_master(struct data_buffer* my_buffer);
+void receive_from_master(struct data_buffer* my_buffer);
+
+//////////////////////////////////////////////////////////////////////
+//----------------------------  MAIN -------------------------------//
+//////////////////////////////////////////////////////////////////////
+
+int main(void)
+{
+	init_control_module();
+	sei();
+		
+    while(1)
+    {
+		;	
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void init_control_module(void)
 {
 	SPCR = (1<<SPIE)|(1<<SPE)|(0<<DORD)|(0<<MSTR)|(0<<CPOL)|(0<<CPHA);
 	DDRB = (1<<DDB6)|(1<<DDB3);
@@ -26,10 +48,7 @@ void init_slave2(void)
 	// IRQ1 and IRQ0 activated on rising edge
 	EICRA = (1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
 	// Enable IRQ1 and IRQ0
-	EIMSK = (1<<INT1)|(1<<INT0);
-	
-	// Let PA be outputs for testing
-	DDRA = 0xFF;
+	EIMSK = (1<<INT1)|(1<<INT0);	
 	
 	//Initiate the buffers.
 	buffer_init(&receive_buffer);
@@ -39,28 +58,28 @@ void init_slave2(void)
 
 void send_to_master(struct data_buffer* my_buffer)
 {
-		//if Transmission not yet started: fetch type and put it in SPDR.
-		if(transmission_status == 0)
-		{
-			SPDR = fetch_from_buffer(my_buffer).type;
-			transmission_status = 1;
-		}
-		//if Type already sent: fetch val and put it in SPDR.
-		else if(transmission_status == 1)
-		{
-			SPDR = fetch_from_buffer(my_buffer).val;
-			transmission_status = 2;
-		}
-		//if the master has accepted both bytes that were sent: discard the data_byte from the buffer.
-		else if(transmission_status == 2)
-		{
-			discard_from_buffer(my_buffer);
-			transmission_status = 0;	
-		}
+	//if Transmission not yet started: fetch type and put it in SPDR.
+	if(transmission_status == 0)
+	{
+		SPDR = fetch_from_buffer(my_buffer).type;
+		transmission_status = 1;
+	}
+	//if Type already sent: fetch val and put it in SPDR.
+	else if(transmission_status == 1)
+	{
+		SPDR = fetch_from_buffer(my_buffer).val;
+		transmission_status = 2;
+	}
+	//if the master has accepted both bytes that were sent: discard the data_byte from the buffer.
+	else if(transmission_status == 2)
+	{
+		discard_from_buffer(my_buffer);
+		transmission_status = 0;
+	}
 };
 
 //Method to receive a data_byte. Called when SPI interrupt has occurred.
-void receive_data(struct data_buffer* my_buffer)
+void receive_from_master(struct data_buffer* my_buffer)
 {
 	//get type.
 	if(transmission_status == 0)
@@ -72,32 +91,8 @@ void receive_data(struct data_buffer* my_buffer)
 	else if(transmission_status == 1)
 	{
 		temp_data.val = SPDR;
-		add_to_buffer(my_buffer, temp_data.type, temp_data.val);//add to receive_buffer when	
-		transmission_status = 0;	
-	}
-}
-
-//////////////////////////////////////////////////////////////////////
-//----------------------------  MAIN -------------------------------//
-//////////////////////////////////////////////////////////////////////
-
-int main(void)
-{
-	init_slave2();
-	sei();
-	
-///////////////////////// TEST ////////////////////////////////////////		
-	for (int i=1; i<16; i++)
-	{
-		add_to_buffer(&send_buffer, i, i);
-	}
-///////////////////////////////////////////////////////////////////////	
-	
-    while(1)
-    {
-///////////////////////// TEST ////////////////////////////////////////			
-		PORTA = amount_stored(&receive_buffer);
-///////////////////////////////////////////////////////////////////////		
+		add_to_buffer(my_buffer, temp_data.type, temp_data.val);//add to receive_buffer when
+		transmission_status = 0;
 	}
 }
 
@@ -108,7 +103,7 @@ ISR(SPI_STC_vect)
 	//Depending on the current mode: do things.		
 	if(mode == 0)
 	{
-		receive_data(&receive_buffer);
+		receive_from_master(&receive_buffer);
 	}
 	else if(mode == 1)
 	{

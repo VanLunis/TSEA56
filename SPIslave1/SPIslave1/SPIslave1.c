@@ -1,5 +1,6 @@
 /*
  * Test1slave2Databuss.c
+ * (Sensor Module)
  *
  * Last edited: 15-04-2015
  * Author: Frida Sundberg, Markus Petersson
@@ -10,14 +11,35 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "buffer.h"
-struct data_buffer receive_buffer;
-struct data_buffer send_buffer;
+struct data_buffer SPI_receive_buffer;
+struct data_buffer SPI_send_buffer;
 volatile int mode = 0; // 0 receiving, 1 sending.
 volatile int transmission_status = 0;
 volatile struct data_byte temp_data;
 volatile int counter = 0;
 
-void init_slave1(void)
+void init_sensor_module(void);
+void send_to_master(struct data_buffer* my_buffer);
+void receive_from_master(struct data_buffer* my_buffer);
+
+//////////////////////////////////////////////////////////////////////
+//----------------------------  MAIN -------------------------------//
+//////////////////////////////////////////////////////////////////////
+
+int main(void)
+{
+	init_sensor_module();
+	sei();
+		
+    while(1)
+    {
+		;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////
+
+void init_sensor_module(void)
 {
 	SPCR = (1<<SPIE)|(1<<SPE)|(0<<DORD)|(0<<MSTR)|(0<<CPOL)|(0<<CPHA);
 	DDRB = (1<<DDB6)|(1<<DDB3);
@@ -61,7 +83,7 @@ void send_to_master(struct data_buffer* my_buffer)
 
 
 //Method to receive a data_byte. Called when SPI interrupt has occurred.
-void receive_data(struct data_buffer* my_buffer)
+void receive_from_master(struct data_buffer* my_buffer)
 {
 	//get type.
 	if(transmission_status == 0)
@@ -78,28 +100,6 @@ void receive_data(struct data_buffer* my_buffer)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////
-//----------------------------  MAIN -------------------------------//
-//////////////////////////////////////////////////////////////////////
-
-int main(void)
-{
-	init_slave1();
-	sei();
-	
-
-///////////////////////// TEST ////////////////////////////////////////	
-	for (int i=1; i<16; i++)
-	{
-		add_to_buffer(&send_buffer, i, i);
-	}
-///////////////////////////////////////////////////////////////////////	
-	
-    while(1)
-    {
-		PORTA = amount_stored(&send_buffer);
-	}
-}
 
 ISR(SPI_STC_vect)
 {
@@ -108,11 +108,11 @@ ISR(SPI_STC_vect)
 	//Depending on the current mode: do things.
 	if(mode == 0)
 	{
-		receive_data(&receive_buffer);
+		receive_from_master(&SPI_receive_buffer);
 	}
 	else if(mode == 1)
 	{
-		send_to_master(&send_buffer);
+		send_to_master(&SPI_send_buffer);
 	}
 }
 

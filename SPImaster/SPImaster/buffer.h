@@ -11,7 +11,7 @@
 #define HEADER_FILE
 #define BUFFER_SIZE 255
 
-
+// Byta från char till uint8_t?
 struct data_byte
 {
 	char type;

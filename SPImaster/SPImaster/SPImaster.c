@@ -15,16 +15,59 @@
 #define F_CPU = 16000000UL
 #define delay_time 0.5
 
-volatile int slave1_ready = 1;
-volatile int slave2_ready = 1;
+volatile int sensor_ready = 1;
+volatile int control_ready = 1;
 volatile int failed_attempts = 0;
 volatile int transmission_status = 0; // 0 to send .type, 1 to send .val, 2 when both sent
 volatile int counter = 0;
 volatile struct data_byte temp_data;
 
-struct data_buffer slave1_buffer;
-struct data_buffer slave2_buffer;
+struct data_buffer sensor_buffer;
+struct data_buffer control_buffer;
 struct data_buffer pc_buffer;
+
+void init_master(void);
+void send(struct data_buffer* my_buffer, int slave);
+void send_to_sensor();
+void send_to_control();
+void receive(int slave);
+void receive_from_sensor();
+void receive_from_control();
+
+//////////////////////////////////////////////////////////////////////
+//----------------------------  MAIN -------------------------------//
+//////////////////////////////////////////////////////////////////////
+
+int main(void)
+{
+	init_master();
+	sei();	
+
+while(1)
+    {
+		;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////
+
+ISR(INT0_vect)
+{
+	control_ready = 1;
+	transmission_status++;
+}
+
+ISR(INT1_vect)
+{
+	sensor_ready = 1;
+	transmission_status++;
+}
+
+ISR(SPI_STC_vect)
+{	
+	PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
+}
+
 
 void init_master(void)
 {
@@ -48,12 +91,10 @@ void init_master(void)
 	// IRQ0 activated on rising edge
 	
 	// Init data buffers in master
-	buffer_init(&slave1_buffer);
-	buffer_init(&slave2_buffer);
+	buffer_init(&sensor_buffer);
+	buffer_init(&control_buffer);
 	buffer_init(&pc_buffer);
-	
-	// Let PA be outputs for testing
-	DDRA = 0xFF;
+
 };
 
 
@@ -62,19 +103,19 @@ void send(struct data_buffer* my_buffer, int slave)
 	int *current_slave_ready;
 	if (slave == 1)
 	{
-		current_slave_ready = &slave1_ready;
+		current_slave_ready = &sensor_ready;
 		PORTB = (1<<PORTB4)|(1<<PORTB3)|(1<<PORTB0);// Order slave 1 to adapt receive mode
 		PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0);
 	}
 	else if(slave == 2)
 	{
-		current_slave_ready = &slave2_ready;
+		current_slave_ready = &control_ready;
 		PORTC = (1<<PORTC0);// Order slave 2 to adapt receive mode
-		PORTC = (0<<PORTC0);	
+		PORTC = (0<<PORTC0);
 	}
 	struct data_byte send_byte = fetch_from_buffer(my_buffer); // Fetch one byte from buffer without discarding
-	transmission_status = 0; // Integer to indicate how far the send process has proceeded, updated when acknowledgment received from slave (in external interrupt) 
-	volatile int local_failed_attempts = 0; 
+	transmission_status = 0; // Integer to indicate how far the send process has proceeded, updated when acknowledgment received from slave (in external interrupt)
+	volatile int local_failed_attempts = 0;
 	while(1)
 	{
 		if (slave == 1)
@@ -83,7 +124,7 @@ void send(struct data_buffer* my_buffer, int slave)
 		}
 		else if(slave==2)
 		{
-			PORTB =(0<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 low	
+			PORTB =(0<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 low
 		}
 		if(*current_slave_ready==1)
 		{
@@ -97,7 +138,7 @@ void send(struct data_buffer* my_buffer, int slave)
 			{
 				*current_slave_ready = 0;
 				SPDR = send_byte.val;
-				_delay_ms(delay_time);	
+				_delay_ms(delay_time);
 			}
 			else if(transmission_status == 2) // Full send_byte transmitted correctly
 			{
@@ -123,14 +164,14 @@ void send(struct data_buffer* my_buffer, int slave)
 	
 };
 
-void send_to_slave1()
+void send_to_sensor()
 {
-	send(&slave1_buffer, 1);
+	send(&sensor_buffer, 1);
 };
 
-void send_to_slave2()
+void send_to_control()
 {
-	send(&slave2_buffer, 2);
+	send(&control_buffer, 2);
 };
 
 void receive(int slave)
@@ -139,13 +180,13 @@ void receive(int slave)
 	int *current_slave_ready;
 	if (slave == 1)
 	{
-		current_slave_ready = &slave1_ready;
+		current_slave_ready = &sensor_ready;
 		PORTD =(0<<PORTD7)|(0<<PORTD6); // Order slave 1 to adapt send mode
 		PORTD =(0<<PORTD7)|(1<<PORTD6);
 	}
 	else if(slave == 2)
 	{
-		current_slave_ready = &slave2_ready;
+		current_slave_ready = &control_ready;
 		PORTD = (0<<PORTD7)|(0<<PORTD6); // Order slave 2 to adapt send mode
 		PORTD = (1<<PORTD7)|(0<<PORTD6);
 	}
@@ -173,8 +214,8 @@ void receive(int slave)
 			}
 			else if(transmission_status == 1)
 			{
-				temp_data.type = SPDR;//read the data that the slave has sent. Note that SPDR should be read here and not where transmission_status==0 
-									  //to make sure that we have gotten an acknowledgment from the slave
+				temp_data.type = SPDR;//read the data that the slave has sent. Note that SPDR should be read here and not where transmission_status==0
+				//to make sure that we have gotten an acknowledgment from the slave
 				*current_slave_ready = 0;
 				SPDR = 0x00;//random data to send to slave, since the slave is sending it does not care what it gets.
 				_delay_ms(delay_time);
@@ -193,10 +234,10 @@ void receive(int slave)
 				{
 					if (slave == 1)
 					{
-						add_to_buffer(&slave2_buffer, temp_data.type, temp_data.val);
+						add_to_buffer(&control_buffer, temp_data.type, temp_data.val);
 					}
 					_delay_ms(delay_time);
-					add_to_buffer(&pc_buffer, temp_data.type, temp_data.val); //otherwise add to buffer!	
+					add_to_buffer(&pc_buffer, temp_data.type, temp_data.val); //otherwise add to buffer!
 				}
 				_delay_ms(delay_time);
 				break;
@@ -216,56 +257,12 @@ void receive(int slave)
 	}
 };
 
-void receive_from_slave1()
+void receive_from_sensor()
 {
 	receive(1);
 };
 
-void receive_from_slave2()
+void receive_from_control()
 {
 	receive(2);
 };
-
-//////////////////////////////////////////////////////////////////////
-//----------------------------  MAIN -------------------------------//
-//////////////////////////////////////////////////////////////////////
-
-int main(void)
-{
-	init_master();
-	sei();	
-
-///////////////////////// TEST ////////////////////////////////////////		
-	for (int i=1; i<3; i++)
-	{
-		receive_from_slave1();
-	}
-
-	while(buffer_empty(&slave2_buffer) == 0)
-	{	
-		send_to_slave2();
-	}
-///////////////////////////////////////////////////////////////////////	
-		
-	while(1)
-    {
-		PORTA = amount_stored(&slave2_buffer);
-    }
-}
-
-ISR(INT0_vect)
-{
-	slave2_ready = 1;
-	transmission_status++;
-}
-
-ISR(INT1_vect)
-{
-	slave1_ready = 1;
-	transmission_status++;
-}
-
-ISR(SPI_STC_vect)
-{	
-	PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
-}
