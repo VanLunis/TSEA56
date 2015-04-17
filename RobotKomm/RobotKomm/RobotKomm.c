@@ -28,12 +28,19 @@ struct data_buffer control_buffer;
 struct data_buffer pc_buffer;
 
 void init_master(void);
+
+// SPI bus functions
 void send(struct data_buffer* my_buffer, int slave);
 void send_to_sensor();
 void send_to_control();
 void receive(int slave);
 void receive_from_sensor();
 void receive_from_control();
+
+// Bluetooth functions
+unsigned char USART_Receive(void);
+void USART_Transmit(unsigned char data);
+void USART_to_SPI(void);
 
 //////////////////////////////////////////////////////////////////////
 //----------------------------  MAIN -------------------------------//
@@ -42,22 +49,17 @@ void receive_from_control();
 int main(void)
 {
 	init_master();
-	sei();	
-
-	for(int i=1; i<3; i++)
+	sei();
+		
+	while(1) //(;;)
 	{
-		add_to_buffer(&control_buffer, i, i);
+///////////////// TEST ///////////////////////////////////////////////		
+		USART_to_SPI();
+		_delay_ms(5);
+		PORTA = fetch_from_buffer(&control_buffer).val;
+		discard_from_buffer(&control_buffer);
+//////////////////////////////////////////////////////////////////////		
 	}
-	
-	while (!buffer_empty(&control_buffer))
-	{
-		send_to_control();
-	}
-
-	while(1)
-    {
-		;
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -93,7 +95,7 @@ void init_master(void)
 	DDRC = (1<<DDC0);
 	PORTC = (0<<PORTC0);
 	
-	DDRD = (1<<DDD7)|(1<<DDD6);
+	DDRD = (1<<DDD7)|(1<<DDD6)|(1<<DDD5)|(1<<DDD1);
 	PORTD = (0<<PORTD7)|(0<<PORTD6);
 	
 	// IRQ1 and IRQ0 activated on rising edge
@@ -105,6 +107,16 @@ void init_master(void)
 	buffer_init(&sensor_buffer);
 	buffer_init(&control_buffer);
 	buffer_init(&pc_buffer);
+	
+	// Init serial USART (bluetooth)
+	/* Set baud rate */
+	unsigned int baud = 7;
+	UBRR0H = (unsigned char)(baud>>8);
+	UBRR0L = (unsigned char)baud;
+	/* Enable receiver and transmitter */
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+	/* Set frame format: 8data, 1stop bit */
+	UCSR0C = (0<<USBS0)|(3<<UCSZ00);
 	
 ///////////////////////// TEST TEST TEST /////////////////////////
 	DDRA = 0xFF;
@@ -160,15 +172,12 @@ void send(struct data_buffer* my_buffer, int slave)
 				discard_from_buffer(my_buffer); // Discard byte from buffer when full transmission succeeded
 				PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
 				transmission_status = 0;
-///////////////////////// TEST TEST TEST /////////////////////////
-				counter++;
-				PORTA = counter;
-//////////////////////////////////////////////////////////////////
 				break;
 			}
 		}
 		else
 		{
+			// OBS: add delay
 			failed_attempts++;
 			local_failed_attempts++;
 			
@@ -265,7 +274,7 @@ void receive(int slave)
 		else //Safety net so that we don't get stuck in a never ending loop if something with the transmission goes to... hell.
 		{
 			local_failed_attempts++;
-			
+			// OBS: add delay
 			if(local_failed_attempts > 1000) // tries allowed before leaving function
 			{
 				PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
@@ -287,4 +296,33 @@ void receive_from_control()
 };
 
 /////////////// BLUETOOTH FUNCTIONS ////////////////////////////////
-//(OBS todo)//
+unsigned char USART_Receive(void)
+{
+	if ( 1 << RXC0)
+	{ // check if there is data to be received
+			/* Wait for data to be received */
+		while ( !(UCSR0A & (1<<RXC0)) )	;
+	
+		/* Get and return received data */
+		return UDR0;	
+	}
+	return 0x00;
+}
+
+void USART_Transmit( unsigned char data )
+{
+		/* Wait for empty USART to transmit */
+		while ( !( UCSR0A & (1<<UDRE0)) )	;
+		/* Put data into USART, sends the data */
+		UDR0 = data;
+}
+
+void USART_to_SPI(void)
+{
+	unsigned char fire_fly_char;
+	fire_fly_char = USART_Receive();
+	if((fire_fly_char & 0xf0) == 0x40)
+	{
+		add_to_buffer(&control_buffer, 0x01, fire_fly_char);
+	}
+}
