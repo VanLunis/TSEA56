@@ -50,18 +50,21 @@ int main(void)
 {
 	init_master();
 	sei();
-		
+			
 	while(1) //(;;)
-	{
-///////////////// TEST ///////////////////////////////////////////////		
-		//USART_to_SPI();
-		if (!buffer_empty(&control_buffer))
+	{	
+		receive_from_sensor();
+		if(!buffer_empty(&pc_buffer))
 		{
-			_delay_ms(5);
-			send_to_control();
+			USART_Transmit(fetch_from_buffer(&pc_buffer).type);
+			USART_Transmit(fetch_from_buffer(&pc_buffer).val);
+			PORTA = fetch_from_buffer(&pc_buffer).val;
+			discard_from_buffer(&pc_buffer);
 		}
-		PORTA = amount_stored(&control_buffer);
-//////////////////////////////////////////////////////////////////////		
+		for (int i=1; i<200; i++)
+		{
+			_delay_ms(10);
+		}
 	}
 }
 
@@ -186,6 +189,8 @@ void send(struct data_buffer* my_buffer, int slave)
 				discard_from_buffer(my_buffer); // Discard byte from buffer when full transmission succeeded
 				PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
 				transmission_status = 0;
+				counter++;
+				PORTA = counter;
 				break;
 			}
 		}
@@ -233,6 +238,7 @@ void receive(int slave)
 		PORTD = (1<<PORTD7)|(0<<PORTD6);
 	}
 	transmission_status=0;
+	_delay_ms(delay_time);
 	while(1)
 	{
 		//Select the right slave.

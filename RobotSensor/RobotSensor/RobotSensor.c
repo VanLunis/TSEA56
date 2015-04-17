@@ -20,7 +20,7 @@
 #define F_CPU 14745000UL
 #define M_PI 3.14159265358979323846
 
-//Spänningar associerade med avstånden nedan för de olika IR-senorerna. (En rad/sensor)
+//Spänningar associerade med avstånden nedan för de olika IR-sensorerna. (En rad/sensor)
 double lookuptable[5][29] = {
 	
 	{3.019, 2.46, 2.18, 2.771, 1.61, 1.438, 1.27, 1.143, 1.11, 1.01, 0.91, 0.84, 0.82, 0.791, 0.75, 0.698, 0.655, 0.615, 0.585, 0.550, 0.530, 0.510, 0.506, 0.502, 0.49, 0.485, 0.46, 0.43, 0},
@@ -72,13 +72,17 @@ int main(void)
 {
 	init_sensor_module();
 	sei();
-		
+	
     while(1)
     {
 		 if (ADCSRA & (1<<ADIF))
 		 {
 			 read();
 			 queue_to_send();
+			 for (int i=0; i<200; i++)
+			 {
+				 _delay_ms(10);
+			 }
 		 }
 	}
 }
@@ -306,21 +310,21 @@ void read(){
 void queue_to_send(){
 	double voltage[8];
 	
-	char temp_rare_right = (char)lookup(voltage[0], 0);
-	char temp_front_right = (char)lookup(voltage[1], 1);
-	char temp_front = (char)lookup(voltage[2], 2);
-	char temp_front_left = (char)lookup(voltage[3], 3);
-	char temp_rare_left = (char)lookup(voltage[4], 4);
-	
 	for (int i=0; i<8; i++){
 		voltage[i] = median(input[i]);
 	}
 	
-	add_to_buffer(&SPI_send_buffer, 0x10, temp_rare_right);
+	char temp_rear_right = (char)lookup(voltage[0], 0);
+	char temp_front_right = (char)lookup(voltage[1], 1);
+	char temp_front = (char)lookup(voltage[2], 2);
+	char temp_front_left = (char)lookup(voltage[3], 3);
+	char temp_rear_left = (char)lookup(voltage[4], 4);
+	
+	add_to_buffer(&SPI_send_buffer, 0x10, temp_rear_right);
 	add_to_buffer(&SPI_send_buffer, 0x11, temp_front_right);
 	add_to_buffer(&SPI_send_buffer, 0x12, temp_front);
 	add_to_buffer(&SPI_send_buffer, 0x13, temp_front_left);
-	add_to_buffer(&SPI_send_buffer, 0x14, temp_rare_left);
+	add_to_buffer(&SPI_send_buffer, 0x14, temp_rear_left);
 	
 	//Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
 	if (voltage[5] >= 2 && driven_distance==0){
@@ -345,7 +349,7 @@ void queue_to_send(){
 	
 	//Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
 	//Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
-	add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_front_right - temp_rare_right)/15));
-	add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_front_left - temp_rare_left)/15));
+	add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_front_right - temp_rear_right)/15));
+	add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_front_left - temp_rear_left)/15));
 	
 }
