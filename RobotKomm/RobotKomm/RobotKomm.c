@@ -54,9 +54,12 @@ int main(void)
 	while(1) //(;;)
 	{
 ///////////////// TEST ///////////////////////////////////////////////		
-		USART_to_SPI();
-		_delay_ms(5);
-		send_to_control();
+		//USART_to_SPI();
+		if (!buffer_empty(&control_buffer))
+		{
+			_delay_ms(5);
+			send_to_control();
+		}
 		PORTA = amount_stored(&control_buffer);
 //////////////////////////////////////////////////////////////////////		
 	}
@@ -81,6 +84,17 @@ ISR(SPI_STC_vect)
 {	
 	PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
 }
+
+ISR(USART0_RX_vect)
+{
+	unsigned char fire_fly_char;
+	fire_fly_char = USART_Receive();
+	if((fire_fly_char & 0xf0) == 0x40)
+	{
+		add_to_buffer(&control_buffer, 0x01, fire_fly_char);
+	}
+}
+
 
 //////////////// INIT FUNCTION //////////////////////////////////////
 void init_master(void)
@@ -114,7 +128,7 @@ void init_master(void)
 	UBRR0H = (unsigned char)(baud>>8);
 	UBRR0L = (unsigned char)baud;
 	/* Enable receiver and transmitter */
-	UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+	UCSR0B = (1<<RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
 	/* Set frame format: 8data, 1stop bit */
 	UCSR0C = (0<<USBS0)|(3<<UCSZ00);
 	
@@ -317,12 +331,3 @@ void USART_Transmit( unsigned char data )
 		UDR0 = data;
 }
 
-void USART_to_SPI(void)
-{
-	unsigned char fire_fly_char;
-	fire_fly_char = USART_Receive();
-	if((fire_fly_char & 0xf0) == 0x40)
-	{
-		add_to_buffer(&control_buffer, 0x01, fire_fly_char);
-	}
-}
