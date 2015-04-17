@@ -9,8 +9,10 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "buffer.h"
 
+#define F_CPU = 16000000UL// OBS need to change
 #define FULL_SPEED 25
 #define SLOW_SPEED 10
 
@@ -73,15 +75,22 @@ int main(void)
 		
     for(;;)
     {
-///////////////////////// TEST TEST TEST /////////////////////////
-		PORTA = amount_stored(&receive_buffer);
-//////////////////////////////////////////////////////////////////
+		if(!buffer_empty(&receive_buffer))
+		{
+			if(fetch_from_buffer(&receive_buffer).type == 0x01)
+			{
+				remote_control(fetch_from_buffer(&receive_buffer).val);
+				discard_from_buffer(&receive_buffer);
+			}
+		}
+		_delay_ms(0.5);
+		/*
 		local_e = e;
 		local_alpha = alpha;
 		u = controller(local_e, local_alpha, e_prior, alpha_prior);
 		setMotor(u);
 		e_prior = local_e;
-		alpha_prior = local_alpha;	
+		alpha_prior = local_alpha;*/	
 	}
 }
 
@@ -229,6 +238,35 @@ void setMotor(char u){
 	else if ( u < SLIGHT_POSITIVE_LIMIT){		forward();		}
 	else if ( u < VERY_POSITIVE_LIMIT)	{		slight_left();	}
 	else{										sharp_left();	}
+	
+}
+
+void remote_control(char control_val){
+	
+	switch (control_val)
+	{
+		case 0x41: // = A in ascii => forward
+			forward();
+			break;
+		case 0x42: // B in ascii => forward left
+			slight_left();
+			break;
+		case 0x43: // C in ascii => forward right
+			slight_right();
+			break;
+		case 0x44: // D in ascii => rotate left
+			rotate_left();
+			break;
+		case 0x45: // E in ascii => rotate right
+			rotate_right();
+			break;
+		case 0x46: // F in ascii => backwards
+			backward();
+			break;
+		case 0x47: // G in ascii => stopp
+			stopp();
+			break;
+	}
 	
 }
 

@@ -13,7 +13,7 @@
 #include "buffer.h"
 
 
-#define F_CPU = 16000000UL
+#define F_CPU = 16000000UL// OBS need to change
 #define delay_time 0.5
 
 volatile int sensor_ready = 1;
@@ -56,8 +56,8 @@ int main(void)
 ///////////////// TEST ///////////////////////////////////////////////		
 		USART_to_SPI();
 		_delay_ms(5);
-		PORTA = fetch_from_buffer(&control_buffer).val;
-		discard_from_buffer(&control_buffer);
+		send_to_control();
+		PORTA = amount_stored(&control_buffer);
 //////////////////////////////////////////////////////////////////////		
 	}
 }
