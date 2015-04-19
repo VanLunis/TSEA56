@@ -23,11 +23,12 @@
 //Spänningar associerade med avstånden nedan för de olika IR-sensorerna. (En rad/sensor)
 double lookuptable[5][29] = {
 	
-	{3.019, 2.46, 2.18, 2.771, 1.61, 1.438, 1.27, 1.143, 1.11, 1.01, 0.91, 0.84, 0.82, 0.791, 0.75, 0.698, 0.655, 0.615, 0.585, 0.550, 0.530, 0.510, 0.506, 0.502, 0.49, 0.485, 0.46, 0.43, 0},
+	{3.06, 2.83, 2.25, 1.87, 1.691, 1.503, 1.351, 1.239, 1.128, 1.051, 0.974, 0.917, 0.854, 0.803, 0.742, 0.701, 0.662, 0.628, 0.603, 0.575, 0.544, 0.525, 0.506, 0.486, 0.466, 0.445, 0.426, 0.412, 0.407, 0.388, 0.380, 0},
 	
-	{3.01, 2.4, 2.07, 1.77, 1.65, 1.43, 1.28, 1.14, 1.1, 0.99, 0.9, 0.83, 0.82, 0.79, 0.735, 0.69, 0.645, 0.6, 0.570, 0.545, 0.52, 0.505, 0.5, 0.49, 0.47, 0.45, 0.43, 0.415, 0},
+	{3.042, 2.67,  2.13, 1.643, 1.606, 1.404, 1.287, 1.213, 1.079, 1.023, 0.909, 0.86, 0.814, 0.77, 0.731, 0.693, 0.654, 0.635, 0.596, 0.576, 0.547, 0.520, 0.502, 0.485, 0.463, 0.449, 0.440, 0.420, 0.410, 0.402, 0.384, 0},
 	
-	{2.95, 2.4, 2.05, 1.75, 1.6, 1.42, 1.25, 1.14, 1.1, 1.0, 0.89, 0.83, 0.815, 0.79, 0.72, 0.675, 0.640, 0.61, 0.58, 0.54, 0.52, 0.51, 0.505, 0.49, 0.48, 0.46, 0.45, 0.44, 0},
+	{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2.551, 2.350, 2.169, 2.045, 2.012, 1.887, 1.756, 1.661, 1.569, 1.495, 1.492, 1.365, 1.308, 1.253, 1.215, 1.158, 1.120, 1.077, 1.039, 1.020, 0.982, 0.957, 0.925, 0.905, 0.868, 0.848,
+	0.829, 0.810, 0.791, 0.773, 0.753, 0.740, 0.734, 0.715, 0.705, 0.695, 675, 0.675, 0},
 	
 	{3.05, 2.5, 2.12, 1.75, 1.6, 1.44, 1.3, 1.15, 1.11, 1.01, 0.92, 0.83, 0.82, 0.80, 0.75, 0.69, 0.65, 0.59, 0.57, 0.55, 0.52, 0.505, 0.5, 0.49, 0.47, 0.45, 0.43, 0.42, 0},
 	
@@ -42,7 +43,7 @@ int median_amount = 9;
 //Array för att lagra input från IR-sensorer, är en spänning.
 double input[5][9];
 
-double AVCC = 4.94;
+double AVCC = 5.03;
 
 struct data_buffer SPI_receive_buffer;
 struct data_buffer SPI_send_buffer;
@@ -309,6 +310,8 @@ void read(){
 
 void queue_to_send(){
 	double voltage[8];
+	int waswhite;
+	double distance;
 	
 	for (int i=0; i<8; i++){
 		voltage[i] = median(input[i]);
@@ -327,11 +330,19 @@ void queue_to_send(){
 	add_to_buffer(&SPI_send_buffer, 0x14, temp_rear_left);
 	
 	//Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
-	if (voltage[5] >= 2 && driven_distance==0){
-		driven_distance = 2*3.1*22/(7*8);
+	if (voltage[5] >= 2 && waswhite){
+		distance += 2*3.1*3.14159/8;
+		if (distance >= 40)
+		{
+			distance = 0;
+		}
+		driven_distance = distance;
+		waswhite = 0;
 	}
-	else{
-		driven_distance = 0;
+	
+	else if(voltage[5]<1)
+	{
+		waswhite = 1;
 	}
 	add_to_buffer(&SPI_send_buffer, 0x15, driven_distance);
 	
@@ -349,7 +360,33 @@ void queue_to_send(){
 	
 	//Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
 	//Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
-	add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_front_right - temp_rear_right)/15));
-	add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_front_left - temp_rear_left)/15));
+	//Om positiv är tillhörande sign[i] 0, 1 om negativ.  
+	if (temp_rear_right > temp_front_right)
+	{
+		sign[0] = 1;
+		add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_rear_right - temp_front_right)/(11.5*5)));
+	}
+	else
+	{
+		sign[0] = 0;
+		add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_front_right - temp_rear_right)/(11.5*5)));
+	}
+	
+	if (temp_rear_left < temp_front_left)
+	{
+		sign[1] = 1;
+		add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_rear_left - temp_front_left)/(11.5*5)))
+	}
+	else
+	{
+		sign[1] = 0;
+		add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_front_left - temp_rear_left)/(11.5*5)));
+	}
+	
+	add_to_buffer(&SPI_send_buffer, 0x20, sign[0]));
+	add_to_buffer(&SPI_send_buffer, 0x21, sign[1]));
+	
+	
+	
 	
 }
