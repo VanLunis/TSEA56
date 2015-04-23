@@ -12,11 +12,11 @@ struct coordinate_struct my_coordinates;
 struct robot my_robot;
 void turn_left() //Uppdatera robotens riktning vid sväng.
 {
-    my_robot.robot_direction=(my_robot.robot_direction + 3) % 4;
+    my_robot.robot_direction = (my_robot.robot_direction + 3) % 4;
 }
 void turn_right()
 {
-    my_robot.robot_direction=(my_robot.robot_direction + 1) % 4;
+    my_robot.robot_direction = (my_robot.robot_direction + 1) % 4;
 }
 void go_forward() //Uppdaterar robotens position vid förflyttning
 {
