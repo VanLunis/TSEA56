@@ -96,20 +96,47 @@ void go_forward() //Uppdaterar robotens position vid förflyttning
 // grid_matrix[our_robot->robot_pos_x][our_robot->robot_pos_y + 1 - 2*(our_robot->robot_direction % 3)]
 int get_left_distance()
 {
-    if (hardcoded_map.grid_matrix[my_robot.robot_pos_x][my_robot.robot_pos_y + 1] == 0) {
-        return 10;
+    if(my_robot.robot_direction == 1)
+    {
+        if (hardcoded_map.grid_matrix[my_robot.robot_pos_x][my_robot.robot_pos_y + 1] == 0) {
+            return 10;
+        }
+        return 200;
     }
-    return 200;
+    else if(my_robot.robot_direction==0)
+    {
+        if(hardcoded_map.grid_matrix[my_robot.robot_pos_x-1][my_robot.robot_pos_y]==0){
+            return 10;
+        }
+        return 200;
+    }
+    
+    return 10; //skrŠp
+    
 }
 int get_right_distance()
 {
-    if (hardcoded_map.grid_matrix[my_robot.robot_pos_x][my_robot.robot_pos_y - 1] == 0) {
-        return 10;
+    if(my_robot.robot_direction == 1)
+    {
+        if (hardcoded_map.grid_matrix[my_robot.robot_pos_x][my_robot.robot_pos_y - 1] == 0) {
+            return 10;
+        }
+        return 200;
     }
-    return 200;
+    else if(my_robot.robot_direction==0)
+    {
+        if(hardcoded_map.grid_matrix[my_robot.robot_pos_x+1][my_robot.robot_pos_y]==0){
+            return 10;
+        }
+        return 200;
+    }
+    return 10;//skrŠpreturn fšr att kompilatorn klagade
 }
 int get_front_distance()
 {
+    if (hardcoded_map.grid_matrix[my_robot.robot_pos_x + 1][my_robot.robot_pos_y] == 0) {
+        return 10;
+    }
     return 200;
 }
 
@@ -309,9 +336,10 @@ void take_decision(uint8_t possible_directions, uint8_t robot_direction, GRID *e
     { // just one possible directions, i.e. dead-end => rotate
         turn_left();
         turn_left();
+        printf("DEAD END");
     }else if ( bit_get(possible_directions, BIT(0)) + bit_get(possible_directions, BIT(1)) + bit_get(possible_directions, BIT(2)) + bit_get(possible_directions, BIT(3)) == 2  )
     { // two possible directions, i.e. continue with the one not coming from:
-        bit_clear(possible_directions, robot_direction + 2 % 4); // clear the bit the robot came from
+        //bit_clear(possible_directions, robot_direction + 2 % 4); // clear the bit the robot came from
         if (possible_directions == 0x01)
         {
             turn_robot(robot_direction, NORTH );
@@ -332,7 +360,6 @@ void take_decision(uint8_t possible_directions, uint8_t robot_direction, GRID *e
     }else if (  bit_get(possible_directions, BIT(0)) + bit_get(possible_directions, BIT(1)) + bit_get(possible_directions, BIT(2)) + bit_get(possible_directions, BIT(3)) >= 3  )
     {	// three or four possible directions, i.e. take one random:
         //beware of the case when we have 3 or 4 drivable but all explored directions.
-        
         // checks which directions that not are explored: driveable->grid_matrix[x][y+1] == 1
         unsigned char explored_directions = 0x00;
         if (explored->grid_matrix[my_robot->robot_pos_x][my_robot->robot_pos_y +1] == 0 )
@@ -351,10 +378,9 @@ void take_decision(uint8_t possible_directions, uint8_t robot_direction, GRID *e
         {
             bit_set(explored_directions,BIT(WEST));
         }
-        
+        printf("Looking for non explored directions.");
+        printf("\n possible directions %i. Current robot position: x: %i, y: %i",possible_directions, my_robot->robot_pos_x, my_robot->robot_pos_y);
         possible_directions &= explored_directions;
-        
-        bit_clear(possible_directions, robot_direction + 2 % 4); // clear the bit the robot came from
         
         srand(time(NULL));
 
@@ -362,6 +388,7 @@ void take_decision(uint8_t possible_directions, uint8_t robot_direction, GRID *e
         while ( !bit_get(possible_directions, BIT(r)) )
         {
             r = rand() % 4;
+            printf("I make random: %i. Possible directions: %i", r, possible_directions);
         }
         turn_robot(robot_direction,r);
         
