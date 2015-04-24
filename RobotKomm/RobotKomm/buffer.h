@@ -1,7 +1,7 @@
 /*
  * buffer.h
  *
- * Last edited: 15-04-2015
+ * Last edited: 22-04-2015
  * Author: Frida Sundberg, Markus Petersson
  * 
  */ 
