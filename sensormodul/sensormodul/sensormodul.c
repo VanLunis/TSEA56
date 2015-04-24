@@ -15,15 +15,18 @@
 #include<avr/delay.h>
 #include<util/delay.h>
 #define F_CPU 1000000UL
-
+#define M_PI 3.14159265358979323846
 //Spänningar associerade med avstånden nedan för de olika IR-senorerna. (En rad/sensor)
-double lookuptable[5][29] = {
+double lookuptable[5][50] = {
 	
-	{3.019, 2.46, 2.18, 2.771, 1.61, 1.438, 1.27, 1.143, 1.11, 1.01, 0.91, 0.84, 0.82, 0.791, 0.75, 0.698, 0.655, 0.615, 0.585, 0.550, 0.530, 0.510, 0.506, 0.502, 0.49, 0.485, 0.46, 0.43, 0},
+	//{3.019, 2.46, 2.18, 2.771, 1.61, 1.438, 1.27, 1.143, 1.11, 1.01, 0.91, 0.84, 0.82, 0.791, 0.75, 0.698, 0.655, 0.615, 0.585, 0.550, 0.530, 0.510, 0.506, 0.502, 0.49, 0.485, 0.46, 0.43, 0},
 	
-	{3.01, 2.4, 2.07, 1.77, 1.65, 1.43, 1.28, 1.14, 1.1, 0.99, 0.9, 0.83, 0.82, 0.79, 0.735, 0.69, 0.645, 0.6, 0.570, 0.545, 0.52, 0.505, 0.5, 0.49, 0.47, 0.45, 0.43, 0.415, 0},
+//	{3.01, 2.4, 2.07, 1.77, 1.65, 1.43, 1.28, 1.14, 1.1, 0.99, 0.9, 0.83, 0.82, 0.79, 0.735, 0.69, 0.645, 0.6, 0.570, 0.545, 0.52, 0.505, 0.5, 0.49, 0.47, 0.45, 0.43, 0.415, 0},
+	{3.06, 2.83, 2.25, 1.87, 1.691, 1.503, 1.351, 1.239, 1.128, 1.051, 0.974, 0.917, 0.854, 0.803, 0.742, 0.701, 0.662, 0.628, 0.603, 0.575, 0.544, 0.525, 0.506, 0.486, 0.466, 0.445, 0.426, 0.412, 0.407, 0.388, 0.380, 0},
+	{3.042, 2.67,  2.13, 1.643, 1.606, 1.404, 1.287, 1.213, 1.079, 1.023, 0.909, 0.86, 0.814, 0.77, 0.731, 0.693, 0.654, 0.635, 0.596, 0.576, 0.547, 0.520, 0.502, 0.485, 0.463, 0.449, 0.440, 0.420, 0.410, 0.402, 0.384, 0},
 	
-	{2.95, 2.4, 2.05, 1.75, 1.6, 1.42, 1.25, 1.14, 1.1, 1.0, 0.89, 0.83, 0.815, 0.79, 0.72, 0.675, 0.640, 0.61, 0.58, 0.54, 0.52, 0.51, 0.505, 0.49, 0.48, 0.46, 0.45, 0.44, 0},
+	{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2.551, 2.350, 2.169, 2.045, 2.012, 1.887, 1.756, 1.661, 1.569, 1.495, 1.492, 1.365, 1.308, 1.253, 1.215, 1.158, 1.120, 1.077, 1.039, 1.020, 0.982, 0.957, 0.925, 0.905, 0.868, 0.848, 
+		0.829, 0.810, 0.791, 0.773, 0.753, 0.740, 0.734, 0.715, 0.705, 0.695, 675, 0.675, 0},
 	
 	{3.05, 2.5, 2.12, 1.75, 1.6, 1.44, 1.3, 1.15, 1.11, 1.01, 0.92, 0.83, 0.82, 0.80, 0.75, 0.69, 0.65, 0.59, 0.57, 0.55, 0.52, 0.505, 0.5, 0.49, 0.47, 0.45, 0.43, 0.42, 0},
 	
@@ -31,18 +34,33 @@ double lookuptable[5][29] = {
 	
 };
 
+/* {
+	
+	{3.06, 2.25, 1.87, 1.691, 1.503, 1.351. 1.239, 1.128, 1.051. 0.974. 0.917. 0.854. 0.803, 0.742, 0.701, 0.662, 0.628, 0.603. 0.575, 0.544, 0.525, 0.506, 0.486, 0.466, 0.445, 0.426, 0.412, 0.407, 0.388, 0.380, 0};
+	{3.042, 2.13, 1.643, 1.606. 1.404. 1.287. 1.213, 1.079, 1.023, 0.909, 0.86, 0.814, 0.77, 0.731, 0.693, 0.654, 0.635, 0.596, 0.576, 0.547, 0.520, 0.502, 0.485, 0.463, 0.449, 0.440, 0.420, 0.410, 0.402, 0.384, 0}
+	// Från 10.
+	{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2.551, 2.350, 2.169, 2.045, 2.012, 1.887, 1.756, 1.661, 1.569, 1.495, 1.492, 1.365, 1.308, 1.253, 1.215, 1.158, 1.120, 1.077, 1.039, 1.020, 0.982, 0.957, 0.925, 0.905, 0.868, 0.848, 
+		0.829, 0.810, 0.791, 0.773, 0.753, 0.740, 0.734, 0.715, 0.705, 0.695, 675, 0.675, 0}
+		
+	}
+*/
+
 //Avstånd tillhörande IR-sensorernas spänningar, i enheten 0.2cm
-int distances[33] = {15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180};
+int distances[36] = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 180, 185};
+//Antalet värden som skall användas för median-bildning. 
 int median_amount = 9;
+//Array för att lagra input från IR-sensorer, är en spänning.  
 double input[5][9];
 
+double AVCC = 5.03;
+
 //funktion som sorterar en mängd värden i en array och returnerar medianen.
-double median(int n, double value[]){
+double median(double value[]){
 	double temp;
 	
-	//Sorterar
-	for(int i=1;i<n;i++){
-		for(int j=0;j<n-i;j++){
+	//Bubbelsortering
+	for(int i=1; i<median_amount; i++){
+		for(int j=0; j<median_amount-i; j++){
 			if(value[j]>=value[j+1])
 			{
 				temp=value[j];
@@ -74,104 +92,177 @@ while(voltage <= lookuptable[sensorindex][i])
 	//	p*D_större+(1-p)*D_mindre, där D är de avstånd är de avstånd som hör ihop med spänningarna.
     p = (lookuptable[sensorindex][i-1] - voltage)/(lookuptable[sensorindex][i-1]-lookuptable[sensorindex][i]);
     return (p*distances[i-1])+(1-p)*distances[i];
-
-
 }
 
 void read(){
-	//Läser från ADC0/Sensor1
-	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0; 	
+	//Läser från ADC0/Sensor1 - IR
+   	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
 	for (int i=0; i<median_amount; i++){
+		
 		//Nollställer ADIF och startar konvertering
 		ADCSRA |= (1<<ADIF) | (1<<ADSC); 
+		
 		//Väntar, så att vi inte går in i ny loop och försöker starta
 		//ni konvertering innan den ovan är färdig
-		_delay_ms(15);
-		input[0][i] = ((double)ADCH*4.94/256);
+		_delay_ms(0.5);
+		
+		input[0][i] = ((double)ADCH*AVCC/256);
 	}
 	
-	// ADC1/Sensor2
+	//
+	
+	// ADC1/Sensor2 - IR
 	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
 	for (int i=0; i<median_amount; i++){
 		ADCSRA |= (1<<ADIF) | (1<<ADSC);
-		_delay_ms(15);
-		input[1][i] = ((double)ADCH*4.94/256);
+		_delay_ms(0.5);
+		input[1][i] = ((double)ADCH*AVCC/256);
 	}
 	
-	// ADC2/Sensor3
+	// ADC2/Sensor3 - IR
 	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 1<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
 	for (int i=0; i<median_amount; i++){
 		ADCSRA |= (1<<ADIF) | (1<<ADSC);
-		_delay_ms(15);
-		input[2][i] = ((double)ADCH*4.94/256);
+		_delay_ms(0.5);
+		input[2][i] = ((double)ADCH*AVCC/256);
 	}
 	
-	// ADC3/Sensor4
+	// ADC3/Sensor4 - IR
 	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
 	for (int i=0; i<median_amount; i++){
 		ADCSRA |= (1<<ADIF) | (1<<ADSC);
-		_delay_ms(15);
-		input[3][i] = ((double)ADCH*4.94/256);
+		_delay_ms(0.5);
+		input[3][i] = ((double)ADCH*AVCC/256);
 	}
 	
-	// ADC4/Sensor5
+	// ADC4/Sensor5 - IR
 	ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
 	for (int i=0; i<median_amount; i++){
 		ADCSRA |= (1<<ADIF) | (1<<ADSC);
-		_delay_ms(15);
-		input[4][i] = ((double)ADCH*4.94/256);
+		_delay_ms(0.5);
+		input[4][i] = ((double)ADCH*AVCC/256);
+	}
+	
+	// ADC5/Sensor6 - reflexsensor
+	ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 0<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
+	for (int i=0; i<median_amount; i++){
+		ADCSRA |= (1<<ADIF) | (1<<ADSC);
+		_delay_ms(0.5);
+		input[5][i] = ((double)ADCH*AVCC/256);
+	}
+	
+	// ADC6/Sensor7 - reflexsensor
+	ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
+	for (int i=0; i<median_amount; i++){
+		ADCSRA |= (1<<ADIF) | (1<<ADSC);
+		_delay_ms(0.5);
+		input[6][i] = ((double)ADCH*AVCC/256);
+	}
+	
+		// ADC5/Sensor6 - gyro
+	ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 0<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
+	_delay_ms(5);
+	for (int i=0; i<median_amount; i++){
+		ADCSRA |= (1<<ADIF) | (1<<ADSC);
+		_delay_ms(0.5);
+		input[7][i] = ((double)ADCH*AVCC/256);
 	}
 }
 
 void send(){
 	double voltage[8];
-	uint8_t output[8];
+	uint8_t output[10];
+	int waswhite;
+	double distance;
+	double alpha[2];
+	uint8_t sign[2];
+	PORTD = 0x00;
 	
 	for (int i=0; i<8; i++){
-		voltage[i] = median(median_amount, i);
+		voltage[i] = median(input[i]);
 	}
 	
 	for (int i=0; i<5; i++){
 		output[i] = (uint8_t)lookup(voltage[i], i);
-		PORTD = output[i];
+		//PORTD = output[i];
 	}
 	
-	//hjultejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V)
-	if (voltage[5] < 4.4){
-		output[5] = 1;
-	}
-	else{
-		output[5] = 0;
-	}
-	
-	//Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V)
-	if (voltage[6] > 4.2){
-		output[6] = 1;
+	//Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
+	if (voltage[5] > 2 && waswhite){
+		distance += 2*3.1*3.14159/8;
+		if (distance >= 40)
+		{
+			distance = 0;
 		}
+		output[5] = distance;
+		waswhite = 0;
+	}
+	else if (voltage < 1)
+	{
+	 	waswhite = 1;
+	}
+	
+	//Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
+	if (voltage[6] >= 4){
+		output[6] = 1;
+		} 
 	else{
 		output[6] = 0;
-		}
+	}
 		
+
+	
+
+	
 	//gyro, returnerar 4.5V då 300grad/sek och 0.5V då -300grad/sek
 	output[7] = ((uint8_t)(300*(voltage[7]-2.5)/2));
+	
+	//Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.  
+	//Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
+	if (output[0] > output[1])
+	{
+		sign[0] = 1;
+		alpha[0] = atan((double)(output[0]-output[1])/(11.5*5))*180/M_PI;
+	}
+	else
+	{
+		sign[0] = 0;
+		alpha[0] = atan((double)(output[1]-output[0])/(11.5*5))*180/M_PI;
+	}
+	
+	alpha[1] = atan((double)(output[4]-output[3])/(11.5*5))*180/M_PI;
+
+	PORTD = output[5];
+	 
+	
 	
 }
 
 
 int main(void)
 {
+	//Sätter port D och B till utgångar.
 	DDRD = 0xFF;
  	DDRB = 0xFF;
 	 
 	PORTD = 0xFF;
-	 
+	
+	//Ställer in muxen så att sensor0 används som input
 	ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;	
 	ADCSRA = 0 << ADIF | 1<<ADEN | 1<<ADIE | 1<<ADPS2 | 1<<ADPS1 | 1<<ADPS0 | 0<<ADATE;
 	
+	//Startar en läsning från sensor0
 	ADCSRA = (1<<ADEN) | (1<<ADSC) | 7 ;
 	 
     while(1)
-    {
+    {	
         if (ADCSRA & (1<<ADIF))
         {
 			read();
