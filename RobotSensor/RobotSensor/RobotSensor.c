@@ -21,29 +21,29 @@
 #define M_PI 3.14159265358979323846
 
 //Spänningar associerade med avstånden nedan för de olika IR-sensorerna. (En rad/sensor)
-double lookuptable[5][29] = {
+double lookuptable[5][50] = {
 	
-	{3.06, 2.83, 2.25, 1.87, 1.691, 1.503, 1.351, 1.239, 1.128, 1.051, 0.974, 0.917, 0.854, 0.803, 0.742, 0.701, 0.662, 0.628, 0.603, 0.575, 0.544, 0.525, 0.506, 0.486, 0.466, 0.445, 0.426, 0.412, 0.407, 0.388, 0.380, 0},
+	{3.014, 2.684, 2.268, 1.959, 1.724, 1.540, 1.369, 1.257, 1.145, 1.087, 0.991, 0.934, 0.865, 0.819, 0.742, 0.755, 0.717, 0.679, 0.640, 0.621, 0.582, 0.562, 0.543, 0.510, 0.488, 0.469, 0.456, 0.444, 0.424, 0.405, 0.401, 0.386, 0},
 	
-	{3.042, 2.67,  2.13, 1.643, 1.606, 1.404, 1.287, 1.213, 1.079, 1.023, 0.909, 0.86, 0.814, 0.77, 0.731, 0.693, 0.654, 0.635, 0.596, 0.576, 0.547, 0.520, 0.502, 0.485, 0.463, 0.449, 0.440, 0.420, 0.410, 0.402, 0.384, 0},
+	{3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
 	
-	{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 2.551, 2.350, 2.169, 2.045, 2.012, 1.887, 1.756, 1.661, 1.569, 1.495, 1.492, 1.365, 1.308, 1.253, 1.215, 1.158, 1.120, 1.077, 1.039, 1.020, 0.982, 0.957, 0.925, 0.905, 0.868, 0.848,
-	0.829, 0.810, 0.791, 0.773, 0.753, 0.740, 0.734, 0.715, 0.705, 0.695, 675, 0.675, 0},
+	{2.543, 2.351, 2.135, 1.976, 1.849, 1.740, 1.644, 1.552, 1.496, 1.423, 1.352, 1.292, 1.254, 1.197, 1.160, 1.122, 1.079, 1.041, 1.022, 0.984, 0.965, 0.927, 0.908, 0.888, 0.869, 0.847, 0.831, 0.812, 0.793, 0.775, 0.755, 0.736, 0.716, 0},
+	//0		1		2		3		4		5	6		7		8		9	10		11		12	13		14		15		16	17		18		19		20	21		22		23		24	25		26
+	{3.105, 2.735, 2.372, 2.081, 1.790, 1.589, 1.401, 1.271, 1.158, 1.082, 0.996, 0.919, 0.842, 0.804, 0.746, 0.708, 0.666, 0.627, 0.589, 0.569, 0.546, 0.510, 0.491, 0.471, 0.452, 0.432, 0.413, 0.394, 0.391, 0.374, 0.373, 0},
 	
-	{3.05, 2.5, 2.12, 1.75, 1.6, 1.44, 1.3, 1.15, 1.11, 1.01, 0.92, 0.83, 0.82, 0.80, 0.75, 0.69, 0.65, 0.59, 0.57, 0.55, 0.52, 0.505, 0.5, 0.49, 0.47, 0.45, 0.43, 0.42, 0},
-	
-	{2.95, 2.5, 2.1, 1.77, 1.64, 1.44, 1.3, 1.14, 1.11, 1.07, 0.95, 0.89, 0.84, 0.83, 0.81, 0.76, 0.70, 0.65, 0.65, 0.64, 0.63, 0.5, 0.49, 0.48, 0.48, 0.47, 0.44, 0.41, 0}
+	{3.033, 2.721, 2.106, 1.794, 1.560, 1.404, 1.269, 1.155, 1.073, 0.977, 0.919, 0.847, 0.802, 0.748, 0.700, 0.660, 0.623, 0.602, 0.565, 0.544, 0.523, 0.497, 0.473, 0.466, 0.447, 0.428, 0.422, 0.406, 0.388, 0.384, 0.365, 0}
 	
 };
 
-//Avstånd tillhörande IR-sensorernas spänningar, i enheten 0.2cm
-int distances[33] = {15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180};
-//Antalet värden som skall användas för median-bildning.
-int median_amount = 9;
-//Array för att lagra input från IR-sensorer, är en spänning.
-double input[5][9];
 
-double AVCC = 5.03;
+//Avstånd tillhörande IR-sensorernas spänningar, i enheten 0.2cm
+int distances[36] = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 180, 185};
+//Antalet värden som skall användas för median-bildning.
+int median_amount = 25;
+//Array för att lagra input från IR-sensorer, är en spänning.
+double input[5][25];
+
+double AVCC = 5.00;
 
 struct data_buffer SPI_receive_buffer;
 struct data_buffer SPI_send_buffer;
@@ -54,6 +54,7 @@ volatile struct data_byte temp_data;
 volatile int counter = 0;
 volatile char driven_distance = 0;
 volatile char goal_detected = 0;
+volatile char sign[2];
 
 void init_sensor_module(void);
 
@@ -80,7 +81,7 @@ int main(void)
 		 {
 			 read();
 			 queue_to_send();
-			 for (int i=0; i<200; i++)
+			 for (int i=0; i<20; i++)
 			 {
 				 _delay_ms(10);
 			 }
@@ -205,7 +206,7 @@ double median(double value[]){
 		}
 	}
 	//returnerar median
-	return value[4];
+	return value[12];
 }
 
 
@@ -323,11 +324,12 @@ void queue_to_send(){
 	char temp_front_left = (char)lookup(voltage[3], 3);
 	char temp_rear_left = (char)lookup(voltage[4], 4);
 	
-	add_to_buffer(&SPI_send_buffer, 0x10, temp_rear_right);
-	add_to_buffer(&SPI_send_buffer, 0x11, temp_front_right);
-	add_to_buffer(&SPI_send_buffer, 0x12, temp_front);
-	add_to_buffer(&SPI_send_buffer, 0x13, temp_front_left);
-	add_to_buffer(&SPI_send_buffer, 0x14, temp_rear_left);
+	add_to_buffer(&SPI_send_buffer, 0xFF, temp_rear_right);
+	
+	add_to_buffer(&SPI_send_buffer, 0xFE, temp_front_right);
+	add_to_buffer(&SPI_send_buffer, 0xFD, temp_front);
+	add_to_buffer(&SPI_send_buffer, 0xFC, temp_front_left);
+	add_to_buffer(&SPI_send_buffer, 0xFB, temp_rear_left);
 	
 	//Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
 	if (voltage[5] >= 2 && waswhite){
@@ -344,7 +346,7 @@ void queue_to_send(){
 	{
 		waswhite = 1;
 	}
-	add_to_buffer(&SPI_send_buffer, 0x15, driven_distance);
+	add_to_buffer(&SPI_send_buffer, 0xFA, driven_distance);
 	
 	//Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
 	if (voltage[6] >= 3){
@@ -353,10 +355,17 @@ void queue_to_send(){
 	else{
 		goal_detected = 0;
 	}
-	add_to_buffer(&SPI_send_buffer, 0x16, goal_detected);
+	add_to_buffer(&SPI_send_buffer, 0xF9, goal_detected);
 	
 	//gyro, returnerar 4.5V då 300grad/sek och 0.5V då -300grad/sek
-	add_to_buffer(&SPI_send_buffer, 0x17, (char)(300*(voltage[7]-2.5)/2));
+	if (voltage[7]>=2.5){
+		add_to_buffer(&SPI_send_buffer, 0xF8, (char)(300*(voltage[7]-2.5)/2));
+		add_to_buffer(&SPI_send_buffer, 0xF7, (char)0);
+	}
+	else{
+		add_to_buffer(&SPI_send_buffer, 0xF8, (char)0);
+		add_to_buffer(&SPI_send_buffer, 0xF7, (char)(300*(2.5-voltage[7])/2));
+	}
 	
 	//Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
 	//Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
@@ -364,27 +373,27 @@ void queue_to_send(){
 	if (temp_rear_right > temp_front_right)
 	{
 		sign[0] = 1;
-		add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_rear_right - temp_front_right)/(11.5*5)));
+		add_to_buffer(&SPI_send_buffer, 0xF6, atan((temp_rear_right - temp_front_right)/(11.5*5)));
 	}
 	else
 	{
 		sign[0] = 0;
-		add_to_buffer(&SPI_send_buffer, 0x18, atan((temp_front_right - temp_rear_right)/(11.5*5)));
+		add_to_buffer(&SPI_send_buffer, 0xF6, atan((temp_front_right - temp_rear_right)/(11.5*5)));
 	}
 	
 	if (temp_rear_left < temp_front_left)
 	{
 		sign[1] = 1;
-		add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_rear_left - temp_front_left)/(11.5*5)))
+		add_to_buffer(&SPI_send_buffer, 0xF5, atan((temp_rear_left - temp_front_left)/(11.5*5)));
 	}
 	else
 	{
 		sign[1] = 0;
-		add_to_buffer(&SPI_send_buffer, 0x19, atan((temp_front_left - temp_rear_left)/(11.5*5)));
+		add_to_buffer(&SPI_send_buffer, 0xF5, atan((temp_front_left - temp_rear_left)/(11.5*5)));
 	}
 	
-	add_to_buffer(&SPI_send_buffer, 0x20, sign[0]));
-	add_to_buffer(&SPI_send_buffer, 0x21, sign[1]));
+	add_to_buffer(&SPI_send_buffer, 0xF4, sign[0]);
+	add_to_buffer(&SPI_send_buffer, 0xF3, sign[1]);
 	
 	
 	

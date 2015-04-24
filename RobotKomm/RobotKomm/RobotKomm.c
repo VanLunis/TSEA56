@@ -48,23 +48,41 @@ void USART_to_SPI(void);
 
 int main(void)
 {
+	DDRA = 0xff;
+	PORTA = 0xff;
 	init_master();
 	sei();
-			
+	
 	while(1) //(;;)
 	{	
+		
+		
 		receive_from_sensor();
+		//receive_from_control();
+		// Marcus kod, borde fungera men gör det inte: // Ola och Oskar:
+		if(!buffer_empty(&control_buffer))
+		{
+			send_to_control();
+		}
+		
+		
 		if(!buffer_empty(&pc_buffer))
 		{
+			
 			USART_Transmit(fetch_from_buffer(&pc_buffer).type);
 			USART_Transmit(fetch_from_buffer(&pc_buffer).val);
-			PORTA = fetch_from_buffer(&pc_buffer).val;
+			//add_to_buffer(&control_buffer, fetch_from_buffer(&pc_buffer).type, fetch_from_buffer(&pc_buffer).val);
+			//send_to_control();
+			//PORTA = fetch_from_buffer(&pc_buffer).val;
 			discard_from_buffer(&pc_buffer);
 		}
-		for (int i=1; i<200; i++)
-		{
-			_delay_ms(10);
-		}
+		_delay_ms(10);
+		//for (int i=1; i<100; i++)
+		//{	§§		
+		
+		
+			
+		//}
 	}
 }
 

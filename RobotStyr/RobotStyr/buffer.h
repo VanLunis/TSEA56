@@ -55,6 +55,8 @@ void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 	//We allow data to be put on our data-buffer if we have not yet traversed the entire buffer. (The buffer can be viewed as a circle).
 	if(my_buffer->full_revolution == 0)
 	{
+		discard_from_buffer(my_buffer);	
+	}
 		my_buffer->contents[my_buffer->tail].type = new_type;
 		my_buffer->contents[my_buffer->tail].val = new_val;
 		//If the tail catches up to the head we have a full revolution.
@@ -65,7 +67,7 @@ void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 		my_buffer->tail = (my_buffer->tail + 1) % BUFFER_SIZE;
 		
 		//PORTA=(char)my_buffer->full_revolution;
-	}
+	
 };
 
 int amount_stored(struct data_buffer* my_buffer)

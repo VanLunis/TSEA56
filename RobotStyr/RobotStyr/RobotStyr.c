@@ -13,14 +13,16 @@
 #include "buffer.h"
 
 #define F_CPU = 16000000UL// OBS need to change
-#define FULL_SPEED 25
-#define SLOW_SPEED 10
+#define FULL_SPEED 75
+#define SLOW_SPEED 50
+#define VERY_SLOW_SPEED 25
+
 
 // limits for motor control signals:   VERY_NEGATIVE_LIMIT < SLIGHT_NEGATIVE_LIMIT < SLIGHT_POSITIVE_LIMIT < VERY_POSITIVE_LIMIT
-#define VERY_NEGATIVE_LIMIT -30
-#define SLIGHT_NEGATIVE_LIMIT -10
-#define SLIGHT_POSITIVE_LIMIT 10
-#define VERY_POSITIVE_LIMIT 30
+#define VERY_NEGATIVE_LIMIT -20
+#define SLIGHT_NEGATIVE_LIMIT -5
+#define SLIGHT_POSITIVE_LIMIT 5
+#define VERY_POSITIVE_LIMIT 20
 
 #define AUTONOMOUS_MODE 1
 #define REMOTE_CONTROL_MODE 0
@@ -32,8 +34,8 @@ volatile int transmission_status = 0;
 volatile struct data_byte temp_data;
 volatile int counter = 0;
 
-volatile char e = 0; // Position error
-volatile char alpha = 0; // Angle error
+volatile double e = 0; // Position error
+volatile double alpha = 0; // Angle error
 
 void init_control_module(void);
 
@@ -51,10 +53,10 @@ void slight_left();
 void slight_right();
 void sharp_left();
 void sharp_right();
-void backward();
-void stopp();
-char controller(char e, char alpha, char e_prior, char alpha_prior);
-void setMotor(char u);
+void backwards();
+void stop();
+double controller(double e, double alpha, double e_prior, double alpha_prior);
+void setMotor(double u);
 void grip_object();
 void drop_down_object();
 void move_arm();
@@ -66,13 +68,162 @@ void move_arm();
 int main(void)
 {
 	init_control_module();
+	DDRA = 0xFF;
 	sei();
-	char local_e = 0;
-	char local_alpha = 0;
-	char e_prior = local_e;
-	char alpha_prior = local_alpha;
-	char u;
+	double local_e = 0;
+	double local_alpha = 0;
+	double e_prior = local_e;
+	double alpha_prior = local_alpha;
+	double u;
 		
+	unsigned char e_right_back = 0;
+	unsigned char e_right_front = 0;
+	unsigned char e_left_back = 0;
+	unsigned char e_left_front = 0;
+	unsigned char distance_front = 0;
+	unsigned char distance_driven = 0;
+	unsigned char alpha_left = 0;
+	unsigned char alpha_right = 0;
+	unsigned char sign_alpha_left = 0;
+	unsigned char sign_alpha_right = 0;	
+		
+	forward();	
+		
+	for (;;)
+	{
+		if(!buffer_empty(&receive_buffer))
+		{
+			char temp_char = fetch_from_buffer(&receive_buffer).type;
+			_delay_ms(5);
+			
+			// Loop this function a couple of times and  calculate control signal u based on several measurementupdates ?
+			switch (temp_char)
+			{
+				case 0xFF: // = distance to wall: right back
+					e_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xFE: // = distance to wall: right front
+					e_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xFD: // = distance to wall: front
+					distance_front = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xFC:  // = distance to wall: left front
+					e_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+				
+				case 0xFB: // = distance to wall: left back
+					e_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xFA: // distance driven:
+					distance_driven = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xF9:  // tejp sensor floor:
+					discard_from_buffer(&receive_buffer);
+					break;
+				
+				case 0xF8:  // angular velocity right:
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xF7: // angular velocity left:
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xF6:  // alpha measured from right:
+					alpha_right = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xF5:  // alpha measured from left
+					alpha_left = round(fetch_from_buffer(&receive_buffer).val/5);
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xF4:  // the sign for alpha right:
+					sign_alpha_right = fetch_from_buffer(&receive_buffer).val;
+					discard_from_buffer(&receive_buffer);
+					break;
+					
+				case 0xF3:  // the sign for alpha left:
+					sign_alpha_left = fetch_from_buffer(&receive_buffer).val;
+					discard_from_buffer(&receive_buffer);
+					break;
+				default:
+					discard_from_buffer(&receive_buffer);
+			} // end of switch
+		} // end of if	
+			
+			// set e, alpha etc:
+			// e is an approximation, works for small numbers of e.
+			
+		
+			
+
+		
+		
+		if (distance_front < 15)
+		{
+			stop();
+		}else{
+			// PID: calculate and then choose direction:
+			
+			// set position error:
+			e =  (e_left_back + e_left_front - e_right_back - e_right_front)/4 ;
+			
+			
+			// set angular error alpha
+			if (e_right_back || e_right_front > 30 ) // When one of the right hand side sensors can't see a wall alpha i calculated from the left hand side sensors
+			{
+				if (sign_alpha_left == 0)
+				{
+					alpha = alpha_left;
+				}
+				else
+				{
+					alpha = -alpha_left;
+				}
+			}
+			else if (e_left_back || e_left_front > 30 ) // When one of the left hand side sensors can't see a wall alpha i calculated from the right hand side sensors
+			{
+				if (sign_alpha_right == 0)
+				{
+					alpha = alpha_right;
+				} else
+				{
+					alpha = (- alpha_right);
+				}
+				
+			}
+			else // The sensors can see walls on both sides (corridor)
+			{
+				alpha = ((pow(-1,sign_alpha_right) * alpha_right) + (pow(-1,sign_alpha_left) * alpha_left))/2;  // [(-1)^{sign_alpha_right} * alpha_right + (-1)^{sign_alpha_left} * alpha_left)]/2
+			}
+			
+			// PID:
+			u = controller(e, alpha, e_prior, alpha_prior);
+			setMotor(u);
+			e_prior = e;
+			alpha_prior = alpha;
+		} 
+		_delay_ms(0.5);
+		//PORTA = u;
+		//add_to_buffer(&send_buffer,0xF2, u);
+		
+	
+		
+		/*
     for(;;)
     {
 		if(!buffer_empty(&receive_buffer))
@@ -83,14 +234,14 @@ int main(void)
 				discard_from_buffer(&receive_buffer);
 			}
 		}
-		_delay_ms(0.5);
-		/*
-		local_e = e;
-		local_alpha = alpha;
-		u = controller(local_e, local_alpha, e_prior, alpha_prior);
-		setMotor(u);
-		e_prior = local_e;
-		alpha_prior = local_alpha;*/	
+		
+		
+		_delay_ms(0.5);*/
+		
+		
+		
+		
+		
 	}
 }
 
@@ -172,9 +323,14 @@ void init_control_module(void)
 	
 };
 
-/////////////////// Communication functions //////////////////////////
+/////////////////// COMMUNICATION FUNCTIONS //////////////////////////
 void send_to_master(struct data_buffer* my_buffer)
 {
+	/*if (fetch_from_buffer(my_buffer).type == null_data_byte.type && fetch_from_buffer(my_buffer).val==null_data_byte.val)
+	{
+		transmission_status = 0;
+		return ;
+	}*/
 	//if Transmission not yet started: fetch type and put it in SPDR.
 	if(transmission_status == 0)
 	{
@@ -184,6 +340,7 @@ void send_to_master(struct data_buffer* my_buffer)
 	//if Type already sent: fetch val and put it in SPDR.
 	else if(transmission_status == 1)
 	{
+		
 		SPDR = fetch_from_buffer(my_buffer).val;
 		transmission_status = 2;
 	}
@@ -215,23 +372,23 @@ void receive_from_master(struct data_buffer* my_buffer)
 
 ///////////////////// CONTROL FUNCTIONS ////////////////////////////
 
-char controller(char e, char alpha, char e_prior, char alpha_prior){
+double controller(double e, double alpha, double e_prior, double alpha_prior){
 	// init:
-	unsigned char delta_T = 1;
-	unsigned char K_e_p = 1;
-	unsigned char K_e_d = 1;
-	unsigned char K_alpha_p = 1;
-	unsigned char K_alpha_d = 1;
-	char u;
+	double delta_T = 1;
+	double K_e_p = 1;
+	double K_e_d = 1;
+	double K_alpha_p = 10;
+	double K_alpha_d = 10;
+	double u;
 	
-	char derivative_e = (e - e_prior)/delta_T;
-	char derivative_alpha = (alpha - alpha_prior)/delta_T;
+	double derivative_e = (e - e_prior)/delta_T;
+	double derivative_alpha = (alpha - alpha_prior)/delta_T;
 	
 	u = K_e_p*e + K_e_d*derivative_e + K_alpha_p*alpha + K_alpha_d*derivative_alpha;
 	return u;
 }
 
-void setMotor(char u){
+void setMotor(double u){
 	
 	if		( u < VERY_NEGATIVE_LIMIT)	{		sharp_right();	}
 	else if ( u < SLIGHT_NEGATIVE_LIMIT){		slight_right();	}
@@ -261,10 +418,10 @@ void remote_control(char control_val){
 			rotate_right();
 			break;
 		case 0x46: // F in ascii => backwards
-			backward();
+			backwards();
 			break;
-		case 0x47: // G in ascii => stopp
-			stopp();
+		case 0x47: // G in ascii => stop
+			stop();
 			break;
 	}
 	
@@ -293,12 +450,12 @@ void forward(){
 	set_speed_left_wheels(FULL_SPEED);
 }
 void rotate_left(){
-	PORTC = (0<<PORTC1) | (1<<PORTC0); // sets right forward, left backward
+	PORTC = (0<<PORTC1) | (1<<PORTC0); // sets right forward, left backwards
 	set_speed_right_wheels(FULL_SPEED);
 	set_speed_left_wheels(FULL_SPEED);
 }
 void rotate_right(){
-	PORTC = (1<<PORTC1) | (0<PORTC0); // sets left forward, right backward
+	PORTC = (1<<PORTC1) | (0<PORTC0); // sets left forward, right backwards
 	set_speed_right_wheels(FULL_SPEED);
 	set_speed_left_wheels(FULL_SPEED);
 }
@@ -315,19 +472,19 @@ void slight_right(){
 void sharp_left(){
 	PORTC = (1<<PORTC1) | (1<<PORTC0);
 	set_speed_right_wheels(FULL_SPEED);
-	set_speed_left_wheels(0);
+	set_speed_left_wheels(VERY_SLOW_SPEED);
 }
 void sharp_right(){
 	PORTC = (1<<PORTC1) | (1<<PORTC0);
-	set_speed_right_wheels(0);
+	set_speed_right_wheels(VERY_SLOW_SPEED);
 	set_speed_left_wheels(FULL_SPEED);
 }
-void backward(){
+void backwards(){
 	PORTC = (0<<PORTC1) | (0<<PORTC0);
 	set_speed_right_wheels(FULL_SPEED);
 	set_speed_left_wheels(FULL_SPEED);
 }
-void stopp(){
+void stop(){
 	PORTC = (1<<PORTC1) | (1<<PORTC0);
 	set_speed_right_wheels(0);
 	set_speed_left_wheels(0);
