@@ -17,12 +17,14 @@
 #define SLOW_SPEED 50
 #define VERY_SLOW_SPEED 25
 
+#define FRONT_MAX_DISTANCE 15
+
 
 // limits for motor control signals:   VERY_NEGATIVE_LIMIT < SLIGHT_NEGATIVE_LIMIT < SLIGHT_POSITIVE_LIMIT < VERY_POSITIVE_LIMIT
-#define VERY_NEGATIVE_LIMIT -20
-#define SLIGHT_NEGATIVE_LIMIT -5
-#define SLIGHT_POSITIVE_LIMIT 5
-#define VERY_POSITIVE_LIMIT 20
+#define VERY_NEGATIVE_LIMIT -10
+#define SLIGHT_NEGATIVE_LIMIT -3
+#define SLIGHT_POSITIVE_LIMIT 3
+#define VERY_POSITIVE_LIMIT 10
 
 #define AUTONOMOUS_MODE 1
 #define REMOTE_CONTROL_MODE 0
@@ -55,7 +57,7 @@ void sharp_left();
 void sharp_right();
 void backwards();
 void stop();
-double controller(double e, double alpha, double e_prior, double alpha_prior);
+double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior);
 void setMotor(double u);
 void grip_object();
 void drop_down_object();
@@ -70,11 +72,12 @@ int main(void)
 	init_control_module();
 	DDRA = 0xFF;
 	sei();
-	double local_e = 0;
-	double local_alpha = 0;
-	double e_prior = local_e;
-	double alpha_prior = local_alpha;
-	double u;
+	
+	double e_prior = 0;
+	double alpha_prior = 0;
+	double e_prior_prior = 0;
+	double alpha_prior_prior = 0;
+	double u = 0;
 		
 	unsigned char e_right_back = 0;
 	unsigned char e_right_front = 0;
@@ -94,7 +97,7 @@ int main(void)
 		if(!buffer_empty(&receive_buffer))
 		{
 			char temp_char = fetch_from_buffer(&receive_buffer).type;
-			_delay_ms(5);
+			_delay_ms(0.5);
 			
 			// Loop this function a couple of times and  calculate control signal u based on several measurementupdates ?
 			switch (temp_char)
@@ -173,7 +176,7 @@ int main(void)
 
 		
 		
-		if (distance_front < 15)
+		if (distance_front < FRONT_MAX_DISTANCE)
 		{
 			stop();
 		}else{
@@ -212,16 +215,20 @@ int main(void)
 			}
 			
 			// PID:
-			u = controller(e, alpha, e_prior, alpha_prior);
+			u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
 			setMotor(u);
+			u = (char) u;
+			add_to_buffer(&send_buffer,0xF2,u);
+			e_prior_prior = e_prior;
+			alpha_prior_prior = alpha_prior;
 			e_prior = e;
 			alpha_prior = alpha;
 		} 
-		_delay_ms(0.5);
+		
 		//PORTA = u;
 		//add_to_buffer(&send_buffer,0xF2, u);
 		
-	
+		_delay_ms(0.5);
 		
 		/*
     for(;;)
@@ -372,17 +379,17 @@ void receive_from_master(struct data_buffer* my_buffer)
 
 ///////////////////// CONTROL FUNCTIONS ////////////////////////////
 
-double controller(double e, double alpha, double e_prior, double alpha_prior){
+double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior){
 	// init:
 	double delta_T = 1;
 	double K_e_p = 1;
-	double K_e_d = 1;
+	double K_e_d = 30;
 	double K_alpha_p = 10;
-	double K_alpha_d = 10;
+	double K_alpha_d = 30;
 	double u;
 	
-	double derivative_e = (e - e_prior)/delta_T;
-	double derivative_alpha = (alpha - alpha_prior)/delta_T;
+	double derivative_e = (e - e_prior/2 - e_prior_prior/2)/delta_T;
+	double derivative_alpha = (alpha - alpha_prior/2 - alpha_prior_prior/2 )/delta_T;
 	
 	u = K_e_p*e + K_e_d*derivative_e + K_alpha_p*alpha + K_alpha_d*derivative_alpha;
 	return u;

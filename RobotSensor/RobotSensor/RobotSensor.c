@@ -323,13 +323,22 @@ void queue_to_send(){
 	char temp_front = (char)lookup(voltage[2], 2);
 	char temp_front_left = (char)lookup(voltage[3], 3);
 	char temp_rear_left = (char)lookup(voltage[4], 4);
-	
+	///*
 	add_to_buffer(&SPI_send_buffer, 0xFF, temp_rear_right);
 	
 	add_to_buffer(&SPI_send_buffer, 0xFE, temp_front_right);
 	add_to_buffer(&SPI_send_buffer, 0xFD, temp_front);
 	add_to_buffer(&SPI_send_buffer, 0xFC, temp_front_left);
 	add_to_buffer(&SPI_send_buffer, 0xFB, temp_rear_left);
+	//*/
+	
+	/*
+	add_to_buffer(&SPI_send_buffer, 0xFF, voltage[0]);
+	add_to_buffer(&SPI_send_buffer, 0xFE,voltage[1]);
+	add_to_buffer(&SPI_send_buffer, 0xFD, voltage[2]);
+	add_to_buffer(&SPI_send_buffer, 0xFC, voltage[3]);
+	add_to_buffer(&SPI_send_buffer, 0xFB, voltage[4]);
+	*/
 	
 	//Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
 	if (voltage[5] >= 2 && waswhite){
