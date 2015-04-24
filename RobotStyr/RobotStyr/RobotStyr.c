@@ -17,6 +17,7 @@
 #define SLOW_SPEED 50
 #define VERY_SLOW_SPEED 25
 
+#define WALLS_MAX_DISTANCE 30 // max distance in cm to where sensors cant find a wall
 #define FRONT_MAX_DISTANCE 15
 #define ROBOT_LENGTH 10 // in cm
 
@@ -67,7 +68,7 @@ void backwards();
 void stop();
 double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior);
 void setMotor(double u);
-double set_alpha(double e_right_back, double e_right_front, double e_left_back,double  e_left_front, double sign_alpha_right,double sign_alpha_left);
+double set_alpha(double distance_right_back, double distance_right_front, double distance_left_back,double  distance_left_front, double sign_alpha_right,double sign_alpha_left);
 void grip_object();
 void drop_down_object();
 void move_arm();
@@ -88,10 +89,10 @@ int main(void)
     double alpha_prior_prior = 0;
     double u = 0;
     
-    unsigned char e_right_back = 0;
-    unsigned char e_right_front = 0;
-    unsigned char e_left_back = 0;
-    unsigned char e_left_front = 0;
+    unsigned char distance_right_back = 0;
+    unsigned char distance_right_front = 0;
+    unsigned char distance_left_back = 0;
+    unsigned char distance_left_front = 0;
     unsigned char distance_front = 0;
     unsigned char distance_driven = 0;
     unsigned char alpha_left = 0;
@@ -112,12 +113,12 @@ int main(void)
             switch (temp_char)
             {
                 case 0xFF: // = distance to wall: right back
-                    e_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                    distance_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
                     discard_from_buffer(&receive_buffer);
                     break;
                     
                 case 0xFE: // = distance to wall: right front
-                    e_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                    distance_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
                     discard_from_buffer(&receive_buffer);
                     break;
                     
@@ -127,12 +128,12 @@ int main(void)
                     break;
                     
                 case 0xFC:  // = distance to wall: left front
-                    e_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                    distance_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
                     discard_from_buffer(&receive_buffer);
                     break;
                     
                 case 0xFB: // = distance to wall: left back
-                    e_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                    distance_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
                     discard_from_buffer(&receive_buffer);
                     break;
                     
@@ -177,13 +178,6 @@ int main(void)
             } // end of switch
         } // end of if
         
-        // set e, alpha etc:
-        // e is an approximation, works for small numbers of e.
-        
-        
-        
-        
-        
         
         if (distance_front < FRONT_MAX_DISTANCE)
         {   // if to short infront: stop!
@@ -194,10 +188,9 @@ int main(void)
             // PD controller: calculate and then choose direction:
             
             // set position error:
-            e =  (e_left_back + e_left_front - e_right_back - e_right_front)/4 ;
-            alpha = set_alpha(e_right_back, e_right_front, e_left_back, e_left_front, sign_alpha_right, sign_alpha_left);
+            e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
+            alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front, sign_alpha_right, sign_alpha_left);
                 
-            
             
             // PID:
             u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
@@ -362,6 +355,37 @@ void receive_from_master(struct data_buffer* my_buffer)
     }
 }
 
+// ______________________ MAZE FUNCTIONS ____________________________
+
+unsigned char get_possible_directions(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front, unsigned char distance_front){
+    unsigned char possible_directions = 0x00;
+    /*
+        possible_direction:
+        (-----|---1) => forward open
+        (-----|--1-) => right open
+        (-----|-1--) => left open
+     
+        ex: (----|0110) => right AND left open
+     */
+    
+    if ( distance_front > WALLS_MAX_DISTANCE) {
+        // open forward
+        possible_directions |= 0x01;
+    }
+    if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )
+    {
+        // open to right:
+        possible_directions |= 0x02;
+    }
+    if (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+    {
+        // open to left:
+        possible_directions |= 0x04;
+    }
+    return possible_directions;
+}
+
+
 //_________________________CONTROL FUNCTIONS _________________________
 
 
@@ -423,21 +447,21 @@ void remote_control(char control_val){
     
 }
 
-double set_alpha(unsigned char e_right_back, unsigned char e_right_front, unsigned char e_left_back, unsigned char e_left_front, unsigned char sign_alpha_right, unsigned char sign_alpha_left){
+double set_alpha(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front, unsigned char sign_alpha_right, unsigned char sign_alpha_left){
    
     // OLAS CODE CALCULATING ALPHA IN CONTROL MODULE INSTEAD:
-    if (e_right_back || e_right_front > 30) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
+    if ( distance_right_back || distance_right_front > 30) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
     {
-        alpha = e_left_front - e_left_back;
+        alpha = distance_left_front - distance_left_back;
         
     }
-    else if (e_left_back || e_left_front > 30) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
+    else if (distance_left_back || distance_left_front > 30) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
     {
-        alpha = e_right_front-e_right_back;
+        alpha = distance_right_front-distance_right_back;
     }
     else
     {   // weights angle from both left and right sensors:
-        alpha = (e_left_front - e_left_back)/2 + (e_right_back - e_right_front)/2;
+        alpha = (distance_left_front - distance_left_back)/2 + (distance_right_back - distance_right_front)/2;
     }
     
     return alpha/ROBOT_LENGTH;
@@ -446,7 +470,7 @@ double set_alpha(unsigned char e_right_back, unsigned char e_right_front, unsign
     
     /* ALBINS CODE USING VALUES FROM SENSOR MODULE:
     // sets angular error alpha
-    if (e_right_back || e_right_front > 30 ) // When one of the right hand side sensors can't see a wall alpha i calculated from the left hand side sensors
+    if (e_right_back || distance_right_front > 30 ) // When one of the right hand side sensors can't see a wall alpha i calculated from the left hand side sensors
     {
         if (sign_alpha_left == 0)
         {
@@ -457,7 +481,7 @@ double set_alpha(unsigned char e_right_back, unsigned char e_right_front, unsign
             alpha = -alpha_left;
         }
     }
-    else if (e_left_back || e_left_front > 30 ) // When one of the left hand side sensors can't see a wall alpha i calculated from the right hand side sensors
+    else if (distance_left_back || distance_left_front > 30 ) // When one of the left hand side sensors can't see a wall alpha i calculated from the right hand side sensors
     {
         if (sign_alpha_right == 0)
         {
