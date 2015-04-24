@@ -66,6 +66,8 @@ int main(void)
 			send_to_control();
 		}
 		
+		receive_from_control();
+		
 		// TODO check connection
 		
 		if(!buffer_empty(&pc_buffer))
