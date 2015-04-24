@@ -79,12 +79,12 @@ int main(void)
     {
 		 if (ADCSRA & (1<<ADIF))
 		 {
-			 read();
-			 queue_to_send();
-			 for (int i=0; i<20; i++)
-			 {
-				 _delay_ms(10);
-			 }
+			read();
+			queue_to_send();
+			//for (int i=0; i<20; i++)
+			//{
+			_delay_ms(0.5);
+			//}
 		 }
 	}
 }
