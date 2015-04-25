@@ -6,37 +6,37 @@
  * Actual code for merged solution between the modules
  *
  */
+#define F_CPU 14700000UL
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "buffer.h"
 
-#define F_CPU = 16000000UL// OBS need to change
-#define FULL_SPEED 75
-#define SLOW_SPEED 50
+#define FULL_SPEED 50
+#define SLOW_SPEED 40
 #define VERY_SLOW_SPEED 25
 
-#define WALLS_MAX_DISTANCE 30 // max distance in cm to where sensors cant find a wall
-#define FRONT_MAX_DISTANCE 15
+#define WALLS_MAX_DISTANCE 22 // max distance in cm to where sensors cant find a wall
+#define FRONT_MAX_DISTANCE 11
 #define ROBOT_LENGTH 10 // in cm
 
 // limits for motor control signals:   VERY_NEGATIVE_LIMIT < SLIGHT_NEGATIVE_LIMIT < SLIGHT_POSITIVE_LIMIT < VERY_POSITIVE_LIMIT
-#define VERY_NEGATIVE_LIMIT -20
+
 #define NEGATIVE_LIMIT -10
 #define SLIGHT_NEGATIVE_LIMIT -3
 #define SLIGHT_POSITIVE_LIMIT 3
 #define POSITIVE_LIMIT 10
-#define VERY_POSITIVE_LIMIT 20
+
 
 #define AUTONOMOUS_MODE 1
 #define REMOTE_CONTROL_MODE 0
 
 #define DELTA_T 1
-#define K_e_P 1         // proportional gain for position error e
-#define K_e_D 30        // derivative gain for position error e
-#define K_alpha_P 10    // proportional gain for angular error alpha
-#define K_alpha_D 50    // derivative gain for angular error alpha
+#define K_e_P 15         // proportional gain for position error e
+#define K_e_D 50        // derivative gain for position error e
+#define K_alpha_P 20    // proportional gain for angular error alpha
+#define K_alpha_D 70    // derivative gain for angular error alpha
 
 struct data_buffer receive_buffer;
 struct data_buffer send_buffer;
@@ -68,10 +68,51 @@ void backwards();
 void stop();
 double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior);
 void setMotor(double u);
-double set_alpha(double distance_right_back, double distance_right_front, double distance_left_back,double  distance_left_front, double sign_alpha_right,double sign_alpha_left);
+double set_alpha(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front);
 void grip_object();
 void drop_down_object();
 void move_arm();
+unsigned char get_possible_directions(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front, unsigned char distance_front);
+void forward_slow();
+
+void turn_dead_end();
+void turn_forward();
+void turn_right();
+void turn_left();
+
+// functions for single bit manipulation:
+#define bit_get(p,m) ((p) & (m))
+#define bit_set(p,m) ((p) |= (m))
+#define bit_clear(p,m) ((p) &= ~(m))
+#define bit_flip(p,m) ((p) ^= (m))
+#define bit_write(c,p,m) (c ? bit_set(p,m) : bit_clear(p,m))
+#define BIT(x)	(0x01 << (x))
+#define LONGBIT(x) ((unsigned long)0x00000001 << (x))
+
+
+/*
+ To set a bit:
+	bit_set(foo, 0x01);
+ To set bit number 5:
+	bit_set(foo, BIT(5));
+ To clear bit number 6 with a bit mask:
+	bit_clear(foo, 0x40);
+ To flip bit number 0:
+	bit_flip(foo, BIT(0));
+ To check bit number 3:
+	if(bit_get(foo, BIT(3)))
+	{
+	}
+ To set or clear a bit based on bit number 4:
+ if(bit_get(foo, BIT(4)))
+ {
+	bit_set(bar, BIT(0));
+ }
+ else
+ {
+	bit_clear(bar, BIT(0));
+ }
+ */
 
 //////////////////////////////////////////////////////////////////////
 //----------------------------  MAIN -------------------------------//
@@ -95,121 +136,315 @@ int main(void)
     unsigned char distance_left_front = 0;
     unsigned char distance_front = 0;
     unsigned char distance_driven = 0;
-    unsigned char alpha_left = 0;
-    unsigned char alpha_right = 0;
-    unsigned char sign_alpha_left = 0;
-    unsigned char sign_alpha_right = 0;
     
+    
+    
+    unsigned char possible_directions = 0x00;
     stop();
     
     for (;;)
     {
-        if(!buffer_empty(&receive_buffer))
+        //PORTA = 0x00;
+        
+        for (int i = 0; i<1; i++)
         {
-            unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
-            _delay_ms(0.5);
             
-            
-            switch (temp_char)
+            if(!buffer_empty(&receive_buffer))
             {
-                case 0xFF: // = distance to wall: right back
-                    distance_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xFE: // = distance to wall: right front
-                    distance_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xFD: // = distance to wall: front
-                    distance_front = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xFC:  // = distance to wall: left front
-                    distance_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xFB: // = distance to wall: left back
-                    distance_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xFA: // distance driven:
-                    distance_driven = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF9:  // tejp sensor floor:
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF8:  // angular velocity right:
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF7: // angular velocity left:
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF6:  // alpha measured from right:
-                    alpha_right = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF5:  // alpha measured from left
-                    alpha_left = round(fetch_from_buffer(&receive_buffer).val/5);
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF4:  // the sign for alpha right:
-                    sign_alpha_right = fetch_from_buffer(&receive_buffer).val;
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                    
-                case 0xF3:  // the sign for alpha left:
-                    sign_alpha_left = fetch_from_buffer(&receive_buffer).val;
-                    discard_from_buffer(&receive_buffer);
-                    break;
-                default:
-                    discard_from_buffer(&receive_buffer);
-            } // end of switch
-        } // end of if
-        
-        
-        if (distance_front < FRONT_MAX_DISTANCE)
-        {   // if to short infront: stop!
-            stop();
-        }
-        else
-        {
-            // PD controller: calculate and then choose direction:
-            
-            // set position error:
-            e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
-            alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front, sign_alpha_right, sign_alpha_left);
+                unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
                 
-            
-            // PID:
-            u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
-            setMotor(u);
-            u = (char) u;
-            add_to_buffer(&send_buffer,0xF2,u);
-            // updates values for PD:
-            e_prior_prior = e_prior;
-            alpha_prior_prior = alpha_prior;
-            e_prior = e;
-            alpha_prior = alpha;
+                
+                switch (temp_char)
+                {
+                    case 0xFF: // = distance to wall: right back
+                        distance_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                        
+                    case 0xFE: // = distance to wall: right front
+                        distance_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                        
+                    case 0xFD: // = distance to wall: front
+                        distance_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                        
+                    case 0xFC:  // = distance to wall: left front
+                        distance_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                        
+                    case 0xFB: // = distance to wall: left back
+                        distance_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                        
+                    case 0xFA: // distance driven:
+                        distance_driven = round(fetch_from_buffer(&receive_buffer).val/5);
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                        
+                    case 0xF9:  // tejp sensor floor:
+                        discard_from_buffer(&receive_buffer);
+                        break;
+                    default:
+                        discard_from_buffer(&receive_buffer);
+                } // end of switch
+            }
         }
         
-        //PORTA = u;
-        //add_to_buffer(&send_buffer,0xF2, u);
         
-        _delay_ms(0.5);
+        
+        if( distance_front > FRONT_MAX_DISTANCE){
+            
+            alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+            
+            if (distance_left_front > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE || distance_left_back > WALLS_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE)
+            {
+                u = controller(0, alpha, 0, alpha_prior, 0,  alpha_prior_prior);
+                setMotor(u);
+                u = (char) u;
+                add_to_buffer(&send_buffer,0xF2,u);
+                
+                // updates values for PD:
+                e_prior_prior = e_prior;
+                alpha_prior_prior = alpha_prior;
+                e_prior = e;
+                alpha_prior = alpha;
+            }
+            else
+            {
+                e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
+                
+                
+                // PID:
+                u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
+                setMotor(u);
+                u = (char) u;
+                add_to_buffer(&send_buffer,0xF2,u);
+                
+                // updates values for PD:
+                e_prior_prior = e_prior;
+                alpha_prior_prior = alpha_prior;
+                e_prior = e;
+                alpha_prior = alpha;
+            }
+            
+        }
+        else //if// (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
+        {
+            
+            _delay_ms(1);
+            stop();
+            
+            
+            
+            if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
+            {
+                rotate_right();
+                for(int i=0; i<505; i++){
+                    _delay_ms(1);
+                }
+                
+                forward();
+                for(int i=0; i<50; i++){
+                    _delay_ms(1);
+                    
+                    if(!buffer_empty(&receive_buffer))
+                    {
+                        unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
+                        
+                        
+                        switch (temp_char)
+                        {
+                            case 0xFF: // = distance to wall: right back
+                                distance_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFE: // = distance to wall: right front
+                                distance_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFD: // = distance to wall: front
+                                distance_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFC:  // = distance to wall: left front
+                                distance_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFB: // = distance to wall: left back
+                                distance_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFA: // distance driven:
+                                distance_driven = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xF9:  // tejp sensor floor:
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                            default:
+                                discard_from_buffer(&receive_buffer);
+                        } // end of switch
+                    }
+                }
+                stop();
+                
+                
+            }
+            else if (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+            {
+                rotate_left();
+                for(int i=0; i<505; i++){
+                    _delay_ms(1);
+                }
+                
+                forward();
+                for(int i=0; i<50; i++){
+                    _delay_ms(1);
+                    if(!buffer_empty(&receive_buffer))
+                    {
+                        unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
+                        
+                        
+                        switch (temp_char)
+                        {
+                            case 0xFF: // = distance to wall: right back
+                                distance_right_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFE: // = distance to wall: right front
+                                distance_right_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFD: // = distance to wall: front
+                                distance_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFC:  // = distance to wall: left front
+                                distance_left_front = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFB: // = distance to wall: left back
+                                distance_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xFA: // distance driven:
+                                distance_driven = round(fetch_from_buffer(&receive_buffer).val/5);
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                                
+                            case 0xF9:  // tejp sensor floor:
+                                discard_from_buffer(&receive_buffer);
+                                break;
+                            default:
+                                discard_from_buffer(&receive_buffer);
+                        } // end of switch
+                    }
+                }
+                stop();
+                
+                
+            }else if (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
+            {
+                // dead-end....
+                _delay_ms(1);
+                
+            }
+            
+            
+        }
         
         /*
+         possible_directions =  get_possible_directions(distance_right_back, distance_right_front, distance_left_back, distance_left_front, distance_front);
+         //PORTA = possible_directions;
+         
+         switch ( bit_get(possible_directions, BIT(0)) + bit_get(possible_directions, BIT(1)) + bit_get(possible_directions, BIT(2)) )
+         {
+         case (0): // dead-end!
+         stop();
+         break;
+         
+         case (1): // one possible direction:
+         if (possible_directions = 0x01)
+         {
+         /*e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
+         alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+         // PID:
+         u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
+         setMotor(u);
+         u = (char) u;
+         add_to_buffer(&send_buffer,0xF2,u);
+         // updates values for PD:
+         e_prior_prior = e_prior;
+         alpha_prior_prior = alpha_prior;
+         e_prior = e;
+         alpha_prior = alpha;
+         
+         }else if (possible_directions = 0x02)
+         {
+         turn_right();
+         }
+         else if (possible_directions = 0x08)
+         {
+         turn_left();
+         }
+         
+         switch (possible_directions)
+         {
+         case (0x01):
+         e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
+         alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+         // PID:
+         u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
+         setMotor(u);
+         u = (char) u;
+         add_to_buffer(&send_buffer,0xF2,u);
+         // updates values for PD:
+         e_prior_prior = e_prior;
+         alpha_prior_prior = alpha_prior;
+         e_prior = e;
+         alpha_prior = alpha;
+         break;
+         case (0x02):
+         turn_right();
+         break;
+         case (0x08):
+         turn_left();
+         break;
+         }
+         break;
+         case (2): // three-way crossroad
+         // take decision...
+         break;
+         case (3): // four-way crossrod
+         // take decision...
+         break;
+         }
+         
+         /*
+         
+         
+         //PORTA = u;
+         //add_to_buffer(&send_buffer,0xF2, u);
+         
+         
+         
+         /*
          for(;;)
          {
          if(!buffer_empty(&receive_buffer))
@@ -360,15 +595,15 @@ void receive_from_master(struct data_buffer* my_buffer)
 unsigned char get_possible_directions(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front, unsigned char distance_front){
     unsigned char possible_directions = 0x00;
     /*
-        possible_direction:
-        (-----|---1) => forward open
-        (-----|--1-) => right open
-        (-----|-1--) => left open
+     possible_direction:
+     (-----|---1) => forward open
+     (-----|--1-) => right open
+     (-----|-1--) => left open
      
-        ex: (----|0110) => right AND left open
+     ex: (----|0110) => right AND left open
      */
     
-    if ( distance_front > WALLS_MAX_DISTANCE) {
+    if ( distance_front > FRONT_MAX_DISTANCE) {
         // open forward
         possible_directions |= 0x01;
     }
@@ -397,24 +632,22 @@ double controller(double e, double alpha, double e_prior, double alpha_prior, do
     //double K_alpha_p = 10;
     //double K_alpha_d = 30;
     //double u;
-  
+    
     
     double derivative_e = (e - e_prior/2 - e_prior_prior/2)/DELTA_T;
     double derivative_alpha = (alpha - alpha_prior/2 - alpha_prior_prior/2 )/DELTA_T;
     
-    return = K_e_P*e + K_e_D*derivative_e + K_alpha_P*alpha + K_alpha_D*derivative_alpha;
+    return K_e_P*e + K_e_D*derivative_e + K_alpha_P*alpha + K_alpha_D*derivative_alpha;
     
 }
 
 void setMotor(double u){
     
-    if		( u < VERY_NEGATIVE_LIMIT){         rotate_right();    	}
-    else if ( u < NEGATIVE_LIMIT){              sharp_right();      }
+    if ( u < NEGATIVE_LIMIT){					sharp_right();      }
     else if ( u < SLIGHT_NEGATIVE_LIMIT){       slight_right();     }
     else if ( u < SLIGHT_POSITIVE_LIMIT){		forward();          }
     else if ( u < POSITIVE_LIMIT)	{           slight_left();      }
-    else if ( u < VERY_POSITIVE_LIMIT){         sharp_left();       }
-    else{										rotate_left();     }
+    else{										sharp_left();       }
     
 }
 
@@ -447,15 +680,15 @@ void remote_control(char control_val){
     
 }
 
-double set_alpha(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front, unsigned char sign_alpha_right, unsigned char sign_alpha_left){
-   
-    // OLAS CODE CALCULATING ALPHA IN CONTROL MODULE INSTEAD:
-    if ( distance_right_back || distance_right_front > 30) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
+double set_alpha(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front){
+    
+    
+    if ( distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
     {
         alpha = distance_left_front - distance_left_back;
         
     }
-    else if (distance_left_back || distance_left_front > 30) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
+    else if (distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
     {
         alpha = distance_right_front-distance_right_back;
     }
@@ -466,44 +699,108 @@ double set_alpha(unsigned char distance_right_back, unsigned char distance_right
     
     return alpha/ROBOT_LENGTH;
     
-    
-    
-    /* ALBINS CODE USING VALUES FROM SENSOR MODULE:
-    // sets angular error alpha
-    if (e_right_back || distance_right_front > 30 ) // When one of the right hand side sensors can't see a wall alpha i calculated from the left hand side sensors
-    {
-        if (sign_alpha_left == 0)
-        {
-            alpha = alpha_left;
-        }
-        else
-        {
-            alpha = -alpha_left;
-        }
-    }
-    else if (distance_left_back || distance_left_front > 30 ) // When one of the left hand side sensors can't see a wall alpha i calculated from the right hand side sensors
-    {
-        if (sign_alpha_right == 0)
-        {
-            alpha = alpha_right;
-        } else
-        {
-            alpha = (- alpha_right);
-        }
-        
-    }
-    else // The sensors can see walls on both sides (corridor)
-    {
-        alpha = ((pow(-1,sign_alpha_right) * alpha_right) + (pow(-1,sign_alpha_left) * alpha_left))/2;  // [(-1)^{sign_alpha_right} * alpha_right + (-1)^{sign_alpha_left} * alpha_left)]/2
-    }
-     
-     return alpha;
+}
 
-     */
-
+// functions for turning in crossroads:
+void turn_forward()
+{
+    
     
 }
 
+void turn_right()
+{
+    /*	
+     // function to turn right, e.g. in a crossroad
+     #define dt 0.010 // 10 ms
+     unsigned char angular_velocity_right = 0;
+     double angle_rotated = 0;
+     rotate_right();
+     
+     while (angle_rotated < 90)
+     {
+     
+     if(!buffer_empty(&receive_buffer))
+     {
+     unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
+     _delay_ms(0.5);
+     
+     if (temp_char == 0xF8)
+     {
+				 angular_velocity_right = fetch_from_buffer(&receive_buffer).val;
+     }
+     
+     }
+     angle_rotated = angle_rotated + angular_velocity_right*dt;
+     // _delay_ms(10);
+     }
+     */
+    
+    rotate_right();
+    for(int i=0; i<505; i++){
+        _delay_ms(1);
+    }
+    
+    forward();
+    for(int i=0; i<400; i++){
+        _delay_ms(1);
+    }
+    stop();
+    
+    
+}
+void turn_left()
+{
+    /*	
+     // function to turn right, e.g. in a crossroad
+     #define dt 0.010 // 10 ms
+     unsigned char angular_velocity_right = 0;
+     double angle_rotated = 0;
+     rotate_right();
+     
+     while (angle_rotated < 90)
+     {
+     
+     if(!buffer_empty(&receive_buffer))
+     {
+     unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
+     _delay_ms(0.5);
+     
+     if (temp_char == 0xF8)
+     {
+				 angular_velocity_right = fetch_from_buffer(&receive_buffer).val;
+     }
+     
+     }
+     angle_rotated = angle_rotated + angular_velocity_right*dt;
+     // _delay_ms(10);
+     }
+     */
+    
+    rotate_left();
+    for(int i=0; i<505; i++){
+        _delay_ms(1);
+    }
+    
+    forward();
+    for(int i=0; i<400; i++){
+        _delay_ms(1);
+    }
+    stop();
+    
+    
+    
+}
+
+void turn_dead_end(){
+    
+    rotate_left();
+    for(int i=0; i<1010; i++){
+        _delay_ms(1);
+    }
+    stop();
+    
+}
 // _________________________ MOTOR FUNCTIONS ___________________________
 void set_speed_right_wheels(unsigned char new_speed_percentage){
     if (new_speed_percentage <= 100 && new_speed_percentage >= 0 )
@@ -526,15 +823,20 @@ void forward(){
     set_speed_right_wheels(FULL_SPEED);
     set_speed_left_wheels(FULL_SPEED);
 }
+void forward_slow(){
+    PORTC = (1<<PORTC1) | (1<<PORTC0);
+    set_speed_right_wheels(VERY_SLOW_SPEED);
+    set_speed_left_wheels(VERY_SLOW_SPEED);
+}
 void rotate_left(){
     PORTC = (0<<PORTC1) | (1<<PORTC0); // sets right forward, left backwards
-    set_speed_right_wheels(FULL_SPEED);
-    set_speed_left_wheels(FULL_SPEED);
+    set_speed_right_wheels(60);
+    set_speed_left_wheels(60);
 }
 void rotate_right(){
     PORTC = (1<<PORTC1) | (0<PORTC0); // sets left forward, right backwards
-    set_speed_right_wheels(FULL_SPEED);
-    set_speed_left_wheels(FULL_SPEED);
+    set_speed_right_wheels(60);
+    set_speed_left_wheels(60);
 }
 void slight_left(){
     PORTC = (1<<PORTC1) | (1<<PORTC0);
