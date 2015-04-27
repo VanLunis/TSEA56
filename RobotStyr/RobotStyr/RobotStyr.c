@@ -49,10 +49,6 @@ volatile int transmission_status = 0;
 volatile struct data_byte temp_data;
 volatile int counter = 0;
 
-/*
- volatile double e = 0; // Position error, NO NEED TO BE GLOBAL???
- volatile double alpha = 0; // Angle error
- */
 unsigned char distance_right_back = 0;
 unsigned char distance_right_front = 0;
 unsigned char distance_left_back = 0;
@@ -151,15 +147,6 @@ int main(void)
     double e_prior_prior = 0;
     double alpha_prior_prior = 0;
     double u = 0;
-    /*
-     unsigned char distance_right_back = 0;
-     unsigned char distance_right_front = 0;
-     unsigned char distance_left_back = 0;
-     unsigned char distance_left_front = 0;
-     unsigned char distance_front = 0;
-     unsigned char distance_driven = 0;
-     */
-    
     
     unsigned char possible_directions = 0x00;
     stop();
@@ -169,19 +156,17 @@ int main(void)
         //PORTA = 0x00;
         update_values_from_sensor();
         
-        if( distance_front > FRONT_MAX_DISTANCE)
+        if(distance_front > FRONT_MAX_DISTANCE)
         {
             alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
             go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
         }
         else
         {
-            
             if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
             {	// ________ TURN RIGHT ______
                 
-                turn_right_corridor();
-                
+                turn_right_corridor();   
             }
             else if (distance_right_back < FRONT_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
             {	// ________ TURN LEFT ______
@@ -191,85 +176,16 @@ int main(void)
             {	// _____ DEAD-END = return _______
                 dead_end();
             }
-        }
-        if (distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE  )
+			else if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+			{
+				// Straight into a T-crossing
+				turn_right_corridor();
+			} 
+		}
+        if(distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
         {	// _______ CROSSROAD ______: hard-coded right-turn!
             turn_right_crossroad();
-        }
-        
-        
-        
-        
-        //possible_directions =  get_possible_directions(distance_right_back, distance_right_front, distance_left_back, distance_left_front, distance_front);
-        //PORTA = possible_directions;
-        /*
-         switch ( bit_get(possible_directions, BIT(0)) + bit_get(possible_directions, BIT(1)) + bit_get(possible_directions, BIT(2)) )
-         {
-         case (0): // dead-end!
-         stop();
-         break;
-         
-         case (1): // one possible direction:
-         if (possible_directions = 0x01)
-         {
-         /*e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
-         alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-         // PID:
-         u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
-         setMotor(u);
-         u = (char) u;
-         add_to_buffer(&send_buffer,0xF2,u);
-         // updates values for PD:
-         e_prior_prior = e_prior;
-         alpha_prior_prior = alpha_prior;
-         e_prior = e;
-         alpha_prior = alpha;
-         
-         }else if (possible_directions = 0x02)
-         {
-         turn_right();
-         }
-         else if (possible_directions = 0x08)
-         {
-         turn_left();
-         }
-         
-         switch (possible_directions)
-         {
-         case (0x01):
-         e =  (distance_left_back + distance_left_front - distance_right_back - distance_right_front)/4 ;
-         alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-         // PID:
-         u = controller(e, alpha, e_prior, alpha_prior, e_prior_prior,  alpha_prior_prior);
-         setMotor(u);
-         u = (char) u;
-         add_to_buffer(&send_buffer,0xF2,u);
-         // updates values for PD:
-         e_prior_prior = e_prior;
-         alpha_prior_prior = alpha_prior;
-         e_prior = e;
-         alpha_prior = alpha;
-         break;
-         case (0x02):
-         turn_right();
-         break;
-         case (0x08):
-         turn_left();
-         break;
-         }
-         break;
-         case (2): // three-way crossroad
-         // take decision...
-         break;
-         case (3): // four-way crossrod
-         // take decision...
-         break;
-         }
-         
-         
-         
-         
-         
+		}
          
          /*
          for(;;)
@@ -489,7 +405,7 @@ unsigned char get_possible_directions(unsigned char distance_right_back, unsigne
 
 //_________________________CONTROL FUNCTIONS _________________________
 
-void go_forward(double * ptr_e, double * ptr_e_prior, double * ptr_e_prior_prior, double* ptr_alpha, double* ptr_alpha_prior, double* ptr_alpha_prior_prior )
+void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, double* ptr_alpha, double* ptr_alpha_prior, double* ptr_alpha_prior_prior )
 {
     
     if (distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE)
@@ -511,7 +427,7 @@ void go_forward(double * ptr_e, double * ptr_e_prior, double * ptr_e_prior_prior
         *ptr_alpha_prior = *ptr_alpha;
     }
     else if ( (distance_left_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE ) || (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
-    {	// just use one side in the maze to controll
+    {	// just use one side in the maze to control
         double u = controller(0, *ptr_alpha, 0, *ptr_alpha_prior, 0,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
@@ -540,7 +456,7 @@ void go_forward(double * ptr_e, double * ptr_e_prior, double * ptr_e_prior_prior
         *ptr_alpha_prior = *ptr_alpha;
     }
     else if (distance_left_back < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
-    { // control on the front sensors!
+    { // control on the back sensors!
         *ptr_e =  (distance_left_back - distance_right_back)/2 ;
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
@@ -560,14 +476,6 @@ void go_forward(double * ptr_e, double * ptr_e_prior, double * ptr_e_prior_prior
 }
 
 double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior){
-    // init:
-    //double delta_T = 1;
-    //double K_e_p = 1;
-    //double K_e_d = 30;
-    //double K_alpha_p = 10;
-    //double K_alpha_d = 30;
-    //double u;
-    
     
     double derivative_e = (e - e_prior/2 - e_prior_prior/2)/DELTA_T;
     double derivative_alpha = (alpha - alpha_prior/2 - alpha_prior_prior/2 )/DELTA_T;
@@ -651,8 +559,6 @@ void turn_forward()
     
 }
 
-
-
 void dead_end(){
     
     for (int i = 0; i<500; i++){ stop();_delay_ms(1);}
@@ -671,28 +577,9 @@ void dead_end(){
         {
             rotate_left();
             update_values_from_sensor();
-            
-            
         }
     }
     for (int i = 0; i<500; i++){stop(); _delay_ms(1); }
-    
-    double angle = 0;
-    
-    while ( abs(angle) > 1.5)
-    {
-        angle = 2*(distance_left_front + distance_right_back - distance_left_back - distance_right_front);
-        if (angle > 0)
-        {
-            rotate_left();
-        }
-        else
-        {
-            rotate_right();
-        }
-        update_values_from_sensor();
-    }
-    
     
 }
 
@@ -705,7 +592,7 @@ void turn_right_corridor() {
     {
         rotate_right();
         update_values_from_sensor();
-    }
+	}
     
     // stopp
     for (int i = 0; i<500; i++){ stop();_delay_ms(1);}
@@ -797,6 +684,8 @@ void turn_left_crossroad(){
     for (int i = 0; i<500; i++){ stop();_delay_ms(1);}
     
 }
+
+
 
 // _________________________ MOTOR FUNCTIONS ___________________________
 void set_speed_right_wheels(unsigned char new_speed_percentage){
