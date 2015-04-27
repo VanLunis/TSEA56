@@ -6,7 +6,7 @@
  * Actual code for merged solution between the modules
  *
  */
-
+#define F_CPU 14745000UL
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "buffer.h"
@@ -17,10 +17,10 @@
 #include<stdlib.h>
 #include<avr/delay.h>
 #include<util/delay.h>
-#define F_CPU 14745000UL
+
 #define M_PI 3.14159265358979323846
 
-//SpŠnningar associerade med avstŒnden nedan fšr de olika IR-sensorerna. (En rad/sensor)
+//Spänningar associerade med avstånden nedan för de olika IR-sensorerna. (En rad/sensor)
 double lookuptable[5][50] = {
     
     {3.014, 2.684, 2.268, 1.959, 1.724, 1.540, 1.369, 1.257, 1.145, 1.087, 0.991, 0.934, 0.865, 0.819, 0.742, 0.755, 0.717, 0.679, 0.640, 0.621, 0.582, 0.562, 0.543, 0.510, 0.488, 0.469, 0.456, 0.444, 0.424, 0.405, 0.401, 0.386, 0},
@@ -39,12 +39,12 @@ double lookuptable[5][50] = {
 };
 
 
-//AvstŒnd tillhšrande IR-sensorernas spŠnningar, i enheten 0.2cm
+//Avstånd tillhörande IR-sensorernas spänningar, i enheten 0.2cm
 int distances[36] = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180};
 
-//Antalet vŠrden som skall anvŠndas fšr median-bildning.
+//Antalet värden som skall användas för median-bildning.
 int median_amount = 25;
-//Array fšr att lagra input frŒn IR-sensorer, Šr en spŠnning.
+//Array för att lagra input från IR-sensorer, är en spänning.
 double input[5][25];
 
 double AVCC = 5.00;
@@ -87,7 +87,7 @@ int main(void)
             queue_to_send();
             //for (int i=0; i<20; i++)
             //{
-            _delay_ms(0.5);
+            //_delay_us(34);
             //}
         }
     }
@@ -112,11 +112,11 @@ void init_sensor_module(void)
     buffer_init(&SPI_send_buffer);
     
     // Sensor Init
-    //StŠller in muxen sŒ att sensor0 anvŠnds som input
+    //Ställer in muxen så att sensor0 används som input
     ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
     ADCSRA = 0 << ADIF | 1<<ADEN | 1<<ADIE | 1<<ADPS2 | 1<<ADPS1 | 1<<ADPS0 | 0<<ADATE;
     
-    //Startar en lŠsning frŒn sensor0
+    //Startar en läsning från sensor0
     ADCSRA = (1<<ADEN) | (1<<ADSC) | 7 ;
 };
 
@@ -194,7 +194,7 @@ ISR(INT1_vect)
 }
 
 /////////////////// SENSOR FUNCTIONS ////////////////////////////////
-//funktion som sorterar en mŠngd vŠrden i en array och returnerar medianen.
+//funktion som sorterar en mängd värden i en array och returnerar medianen.
 double median(double value[]){
     double temp;
     
@@ -214,102 +214,104 @@ double median(double value[]){
 }
 
 
-//Funktion som returnerar ett linjŠrinterpolerat avstŒnd fšr inspŠnningar (fšr IR-sensorer). Behšver fšrutom spŠnning Šven sensorindex.
+//Funktion som returnerar ett linjärinterpolerat avstånd för inspänningar (för IR-sensorer). Behöver förutom spänning även sensorindex.
 double lookup (double voltage, int sensorindex){
     int i;
     double p =0;
     
-    //Stegar igenom tabellen tills vi hittar ett vŠrde som Šr mindre Šn vŒr inspŠnning
+    //Stegar igenom tabellen tills vi hittar ett värde som är mindre än vår inspänning
     while(voltage <= lookuptable[sensorindex][i])
     {
         i++;
     }
     
-    //Om vi lŒter vŒr inspŠnning vara en linjŠrkombination av en den stšrsta mindre och en den minsta stšrre spŠnning som existerar
-    //i lookuptable Šr p andelen av den stšrre och p-1 andelen av den mindre som krŠvs fšr att fŒ inspŠnningen.
-    //AlltsŒ: InspŠnning = p*V_stšrre+(1-p)*V_mindre.
-    //AvstŒndet till identifierat objekt Šr dŒ
-    //	p*D_stšrre+(1-p)*D_mindre, dŠr D Šr de avstŒnd Šr de avstŒnd som hšr ihop med spŠnningarna.
+    //Om vi låter vår inspänning vara en linjärkombination av en den största mindre och en den minsta större spänning som existerar
+    //i lookuptable är p andelen av den större och p-1 andelen av den mindre som krävs för att få inspänningen.
+    //Alltså: Inspänning = p*V_större+(1-p)*V_mindre.
+    //Avståndet till identifierat objekt är då
+    //	p*D_större+(1-p)*D_mindre, där D är de avstånd är de avstånd som hör ihop med spänningarna.
     p = (lookuptable[sensorindex][i-1] - voltage)/(lookuptable[sensorindex][i-1]-lookuptable[sensorindex][i]);
     return ((p*distances[i-1])+(1-p)*distances[i]);
 }
 
 void read(){
-    //LŠser frŒn ADC0/Sensor1 - IR
+    //Läser från ADC0/Sensor1 - IR
     ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         
-        //NollstŠller ADIF och startar konvertering
+        //Nollställer ADIF och startar konvertering
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
         
-        //VŠntar, sŒ att vi inte gŒr in i ny loop och fšrsšker starta
-        //ni konvertering innan den ovan Šr fŠrdig
-        _delay_ms(0.5);
+        //Väntar, så att vi inte går in i ny loop och försöker starta
+        //ni konvertering innan den ovan är färdig
+        _delay_us(34);
         input[0][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC1/Sensor2 - IR
     ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 0<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
+        _delay_us(34);
         input[1][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC2/Sensor3 - IR
     ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 1<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
+        _delay_us(34);
         input[2][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC3/Sensor4 - IR
     ADMUX = 0<<MUX4 | 0<<MUX3 | 0<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
+        _delay_us(34);
         input[3][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC4/Sensor5 - IR
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 0<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
+        _delay_us(34);
         input[4][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC5/Sensor6 - reflexsensor
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 0<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
+        _delay_us(34);
         input[5][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC6/Sensor7 - reflexsensor
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 0<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
+        _delay_us(34);
         input[6][i] = ((double)ADCH*AVCC/256);
     }
     
     // ADC5/Sensor6 - gyro
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
-    _delay_ms(5);
+    _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
-        _delay_ms(0.5);
-        input[7][i] = ((double)ADCH*AVCC/256);
+        _delay_us(34);
+        
+        input[7][i] = 25/12*ADCH + 300;
+        //input[7][i] = ((double)ADCH*AVCC/256);
     }
 }
 
@@ -343,7 +345,7 @@ void queue_to_send(){
      add_to_buffer(&SPI_send_buffer, 0xFB,(char) voltage[4]);
      */
     
-    //Hjultejpsensor, returnerar lŠngd dŒ tejp hittas (svart ger utspŠnning ~3.9V, ljusgrŒ ger ~0.2V )
+    //Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
     if (voltage[5] >= 2 && waswhite){
         distance += 2*3.1*3.14159/8;
         if (distance >= 40)
@@ -360,7 +362,7 @@ void queue_to_send(){
     }
     add_to_buffer(&SPI_send_buffer, 0xFA, driven_distance);
     
-    //Golv-tejpsensor, returnerar 1 dŒ tejp hittas (tejp ger utspŠnning ~4.3V, golv oklart)
+    //Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
     if (voltage[6] >= 3){
         goal_detected = 1;
     }
@@ -369,7 +371,7 @@ void queue_to_send(){
     }
     add_to_buffer(&SPI_send_buffer, 0xF9, goal_detected);
     
-    //gyro, returnerar 4.5V dŒ 300grad/sek och 0.5V dŒ -300grad/sek
+    //gyro, returnerar 4.5V då 300grad/sek och 0.5V då -300grad/sek
     if (voltage[7]>2.5){
         //char temp_ola_oscar = round(voltage[7]); //round(300*(-2.5)/2));
         add_to_buffer(&SPI_send_buffer, 0xF8, (char)(300*(voltage[7]-2.5)/2));//(char)(300*(voltage[7]-2.5)/2));
@@ -380,9 +382,9 @@ void queue_to_send(){
         add_to_buffer(&SPI_send_buffer, 0xF7, (char)(300*(2.5-voltage[7])/2));
     }
     
-    //BerŠknar vinkeln mot vŠggen (Alpha, i designspec.), det antas att avstŒndet mellan S1 och S2 Šr 5cm.
-    //Definierad som positiv om robot riktad Œt vŠnster och negativ om riktad Œt hšger.
-    //Om positiv Šr tillhšrande sign[i] 0, 1 om negativ.
+    //Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
+    //Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
+    //Om positiv är tillhörande sign[i] 0, 1 om negativ.
     /*
      if (temp_rear_right > temp_front_right)
      {
