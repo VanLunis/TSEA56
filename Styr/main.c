@@ -3,6 +3,8 @@
 #include <stdint.h>
 struct robot my_robot;
 
+// Test Github
+
 #include "grid.h"
 GRID explored_map; //17 stor för att kunna ta hänsyn till banans periferi.
 GRID driveable_map;
