@@ -569,15 +569,6 @@ void dead_end(){
             rotate_right(50);
             update_values_from_sensor();
         }
-		// Need to align? //
-		stop();
-		_delay_ms(50);
-		_delay_ms(50);
-		while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.5 && abs(distance_left_back - distance_left_front) < 1.5 ))
-		{
-			rotate_left(40);
-			update_values_from_sensor();
-		}
     }
 	
 	// Closer to left wall then left? Then rotate left 180 degrees! :
@@ -587,17 +578,24 @@ void dead_end(){
         {
             rotate_left(50);
             update_values_from_sensor();
-        }
-		// Need to align? //
-		stop();
-		_delay_ms(50);
-		_delay_ms(50);
-		while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.5 && abs(distance_left_back - distance_left_front) < 1.5 ))
+		}
+    }
+	// Need to align? //
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.5 && abs(distance_left_back - distance_left_front) < 1.5 ))
+	{
+		if(distance_left_back > distance_left_front)
 		{
 			rotate_right(40);
-			update_values_from_sensor();
-		}		
-    }
+		}
+		else
+		{
+			rotate_left(40);
+		}
+		update_values_from_sensor();
+	}
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -615,7 +613,22 @@ void turn_right_corridor() {
         rotate_right(60);
         update_values_from_sensor();
 	}
-	
+	// Need to align? //
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < 1.5 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+	{
+		if(distance_left_back > distance_left_front)
+		{
+			rotate_right(40);
+		}
+		else
+		{
+			rotate_left(40);
+		}
+		update_values_from_sensor();
+	}
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -633,6 +646,22 @@ void turn_left_corridor() {
         update_values_from_sensor();
     }
     
+	// Need to align? //
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	while ( !(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < 1.5 && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE ))
+	{
+		if(distance_right_front > distance_right_back)
+		{
+			rotate_right(40);
+		}
+		else
+		{
+			rotate_left(40);
+		}
+		update_values_from_sensor();
+	}
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);	
