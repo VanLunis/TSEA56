@@ -584,7 +584,7 @@ void dead_end(){
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.5 && abs(distance_left_back - distance_left_front) < 1.5 ))
+	while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && abs(distance_left_back - distance_left_front) < 1.2))
 	{
 		if(distance_left_back > distance_left_front)
 		{
@@ -617,7 +617,7 @@ void turn_right_corridor() {
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < 1.5 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front)))// < 1 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
 	{
 		if(distance_left_back > distance_left_front)
 		{
@@ -650,7 +650,7 @@ void turn_left_corridor() {
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while ( !(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < 1.5 && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE ))
+	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < 1))// && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE ))
 	{
 		if(distance_right_front > distance_right_back)
 		{
