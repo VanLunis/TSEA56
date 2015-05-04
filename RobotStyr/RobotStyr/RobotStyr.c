@@ -18,8 +18,8 @@
 #define SLOW_SPEED 40
 #define VERY_SLOW_SPEED 25
 
-#define WALLS_MAX_DISTANCE 22 // max distance in cm to where sensors cant find a wall
-#define FRONT_MAX_DISTANCE 13
+#define WALLS_MAX_DISTANCE 23 // max distance in cm to where sensors cant find a wall
+#define FRONT_MAX_DISTANCE 11
 #define BACK_MAX_DISTANCE 30
 #define ROBOT_LENGTH 10 // in cm
 
@@ -88,11 +88,10 @@ unsigned char get_possible_directions(unsigned char distance_right_back, unsigne
 void forward_slow();
 
 void tcrossing_closed_front_R();
-void turn_left_corridor(); //change to left turn with direction as input
-void turn_right_corridor(); //change to right turn with direction as input
-//void corridor(char direction);
-void turn_right_crossroad(); //change to 4 way crossroad with direction as input
-//void tcrossing_closed_right(char direction);
+void turn_left_corridor();
+void turn_right_corridor();
+void turn_right_crossroad();
+void tcrossing_closed_right_L();
 void tcrossing_closed_left_R();
 void dead_end();
 
@@ -180,8 +179,8 @@ int main(void)
 			{	// _____ DEAD-END = return _______
 				dead_end();
 			}
-			// Straight into a T-crossing with open left and right?
-			else if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+			// Straight into a T-crossing with closed front?
+			else if (distance_right_back > 18 && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > 18 && distance_left_front > WALLS_MAX_DISTANCE)
 			{
 				// ________ TURN RIGHT ______	
 				tcrossing_closed_front_R();
@@ -197,10 +196,15 @@ int main(void)
 		{	// _______ CROSSROAD ______: hard-coded right-turn!
 			turn_right_crossroad();
 		}
-		// Closed left tcrossing?
+		// Closed left tcrossing? -> turn right
 		else if(distance_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
 		{
 			tcrossing_closed_left_R();	
+		}
+		// Closed right tcrossing? -> turn left
+		else if(distance_front > WALLS_MAX_DISTANCE && distance_left_back > 28 && distance_left_front > 25 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+		{
+			tcrossing_closed_right_L();
 		}
          /*
          for(;;)
@@ -599,17 +603,17 @@ void tcrossing_closed_front_R()// Right turn
 		{
 			if (distance_left_back > distance_left_front)
 			{
-				while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
+				while(!(distance_front > FRONT_MAX_DISTANCE && distance_left_back < 25 && distance_left_front < 25));			
 				{
-					rotate_right(60);
+					rotate_right(50);
 					update_values_from_sensor();
 				}
 			}
 			else
 			{
-				while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
-				{
-					rotate_left(60);
+				while(!(distance_front > FRONT_MAX_DISTANCE && distance_left_back < 25 && distance_left_front < 25));
+				{				
+					rotate_left(50);
 					update_values_from_sensor();
 				}
 			}
@@ -645,6 +649,14 @@ void tcrossing_closed_front_R()// Right turn
 
 //(b)
 void turn_left_corridor() {
+	double e = 0; // Position error, NO NEED TO BE GLOBAL???
+	double alpha = 0; // Angle error
+
+	double e_prior = 0;
+	double alpha_prior = 0;
+	double e_prior_prior = 0;
+	double alpha_prior_prior = 0;
+	
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -691,6 +703,19 @@ void turn_left_corridor() {
 		}
 		update_values_from_sensor();
 	}
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	
+	// FORWARD
+	while (!(distance_left_back < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_back > 30))
+	{
+		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+		update_values_from_sensor();
+	}
+	
+	//  STOPP
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -866,10 +891,73 @@ void turn_right_crossroad()
     
 }
 
-//(g)
+//(g) Closed right t-crossing
+void tcrossing_closed_right_L()// Left turn
+{
+	double e = 0; // Position error, NO NEED TO BE GLOBAL???
+	double alpha = 0; // Angle error
+
+	double e_prior = 0;
+	double alpha_prior = 0;
+	double e_prior_prior = 0;
+	double alpha_prior_prior = 0;
+	
+	//// FULKOD: ///////////////
+	for(int i=0; i<60; i++)
+	{
+		update_values_from_sensor();
+		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+	}
+	////////////////////////////
+	
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	
+	// short hard-coded rotate:
+	rotate_left(60);
+	for (int i = 0; i<400; i++){ _delay_ms(1);}
+	
+	//  STOPP
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	
+	while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < BACK_MAX_DISTANCE))
+	{
+		rotate_left(60);
+		update_values_from_sensor();
+	}
+	
+	//  STOPP
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	
+	
+	rotate_left(40);
+	_delay_ms(1);
+	//  STOPP
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	
+	// FORWARD
+	while (!(distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
+	{
+		forward_slow();
+		update_values_from_sensor();
+	}
+	
+	//  STOPP
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	
+}
 
 //(h) Closed left t-crossing
-
 void tcrossing_closed_left_R()// Right turn
 {
 	
@@ -898,8 +986,8 @@ void tcrossing_closed_left_R()// Right turn
 	_delay_ms(50);
 	
 	
-	rotate_right(60);
-	for (int i = 0; i<65; i++){ _delay_ms(1);}
+	rotate_right(40);
+	_delay_ms(8);
 	//  STOPP
 	stop();
 	_delay_ms(50);
