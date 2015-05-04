@@ -370,7 +370,7 @@ void queue_to_send(){
 	}
 	else
 	{
-		add_to_buffer(&SPI_send_buffer, 0xFA, (uint8_t)0;
+		add_to_buffer(&SPI_send_buffer, 0xFA, (uint8_t)0);
 	}
     
     //Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
