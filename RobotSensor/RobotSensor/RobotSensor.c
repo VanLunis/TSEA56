@@ -328,7 +328,8 @@ void read(){
 
 void queue_to_send(){
     double voltage[8];
-    uint8_t black;
+    int waswhite;
+    double distance;
     
     for (int i=0; i<8; i++){
         voltage[i] = median(input[i]);
@@ -358,21 +359,21 @@ void queue_to_send(){
      */
     
     //Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
-    if (voltage[5] >= 2 && !black){
-        black = 1;
-		add_to_buffer(&SPI_send_buffer, 0xFA, black);
-    }
-    
-    else if(voltage[5]<1)
-    {
-        black = 0;
-		add_to_buffer(&SPI_send_buffer, 0xFA, black);
-	}
-	else
-	{
-		add_to_buffer(&SPI_send_buffer, 0xFA, (uint8_t)0);
-	}
-    
+	 if ((voltage[5] >= 3.3) && (black == 0)){
+		 black = 1;
+		 add_to_buffer(&SPI_send_buffer, 0xFA, black);
+	 }
+	 
+	 else if(voltage[5]<3)
+	 {
+		 black = 0;
+		 add_to_buffer(&SPI_send_buffer, 0xFA, black);
+	 }
+	 else
+	 {
+		 add_to_buffer(&SPI_send_buffer, 0xFA, (uint8_t)0);
+	 }
+	   
     //Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
     if (voltage[6] >= 3){
         goal_detected = 1;
