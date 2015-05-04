@@ -21,7 +21,7 @@
 #define M_PI 3.14159265358979323846
 
 //Spänningar associerade med avstånden nedan för de olika IR-sensorerna. (En rad/sensor)
-double lookuptable[5][50] = {
+double lookuptable[6][50] = {
     
     {3.014, 2.684, 2.268, 1.959, 1.724, 1.540, 1.369, 1.257, 1.145, 1.087, 0.991, 0.934, 0.865, 0.819, 0.742, 0.755, 0.717, 0.679, 0.640, 0.621, 0.582, 0.562, 0.543, 0.510, 0.488, 0.469, 0.456, 0.444, 0.424, 0.405, 0.401, 0.386, 0},
     
@@ -36,6 +36,8 @@ double lookuptable[5][50] = {
     {3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
     
     {3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
+
+	{3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
 };
 
 
@@ -45,7 +47,7 @@ int distances[36] = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 7
 //Antalet värden som skall användas för median-bildning.
 int median_amount = 25;
 //Array för att lagra input från IR-sensorer, är en spänning.
-double input[5][25];
+double input[7][25];
 
 double AVCC = 5.00;
 
@@ -303,7 +305,7 @@ void read(){
         input[6][i] = ((double)ADCH*AVCC/256);
     }
     
-    // ADC5/Sensor6 - gyro
+   /* // ADC5/Sensor6 - gyro
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
     _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
@@ -311,8 +313,17 @@ void read(){
         _delay_us(34);
         
         input[7][i] = 25/12*ADCH + 300;
-        //input[7][i] = ((double)ADCH*AVCC/256);
-    }
+        //input[7][i] = ((double)ADCH*AVCC/256);*/
+   
+	// ADC7/Sensor8 - back sensor 
+	 ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
+     _delay_ms(0.34);
+     for (int i=0; i<median_amount; i++){
+	     ADCSRA |= (1<<ADIF) | (1<<ADSC);
+	     _delay_us(34);
+	     input[7][i] = ((double)ADCH*AVCC/256);
+	 }
+     
 }
 
 void queue_to_send(){
@@ -329,12 +340,14 @@ void queue_to_send(){
     char temp_front = (char)lookup(voltage[2], 2);
     char temp_front_left = (char)lookup(voltage[3], 3) + 5;
     char temp_rear_left = (char)lookup(voltage[4], 4);
+	char temp_back = (char)lookup(voltage[7], 5);
     ///*
     add_to_buffer(&SPI_send_buffer, 0xFF, temp_rear_right);
     add_to_buffer(&SPI_send_buffer, 0xFE, temp_front_right);
     add_to_buffer(&SPI_send_buffer, 0xFD, temp_front);
     add_to_buffer(&SPI_send_buffer, 0xFC, temp_front_left);
     add_to_buffer(&SPI_send_buffer, 0xFB, temp_rear_left);
+	add_to_buffer(&SPI_send_buffer, 0xF7, temp_back);
     //*/
     
     /*
@@ -372,7 +385,7 @@ void queue_to_send(){
     add_to_buffer(&SPI_send_buffer, 0xF9, goal_detected);
     
     //gyro, returnerar 4.5V då 300grad/sek och 0.5V då -300grad/sek
-    if (voltage[7]>2.5){
+    /*if (voltage[7]>2.5){
         //char temp_ola_oscar = round(voltage[7]); //round(300*(-2.5)/2));
         add_to_buffer(&SPI_send_buffer, 0xF8, (char)(300*(voltage[7]-2.5)/2));//(char)(300*(voltage[7]-2.5)/2));
         add_to_buffer(&SPI_send_buffer, 0xF7, (char)0);
@@ -380,7 +393,7 @@ void queue_to_send(){
     else{
         add_to_buffer(&SPI_send_buffer, 0xF8, (char)0);
         add_to_buffer(&SPI_send_buffer, 0xF7, (char)(300*(2.5-voltage[7])/2));
-    }
+    }*/
     
     //Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
     //Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.

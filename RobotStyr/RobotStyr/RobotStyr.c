@@ -54,6 +54,7 @@ unsigned char distance_right_front = 0;
 unsigned char distance_left_back = 0;
 unsigned char distance_left_front = 0;
 unsigned char distance_front = 0;
+unsigned char distance_back = 0;
 unsigned char distance_driven = 0;
 
 void init_control_module(void);
@@ -354,10 +355,14 @@ void update_values_from_sensor(){
             case 0xFB: // = distance to wall: left back
                 distance_left_back = round(fetch_from_buffer(&receive_buffer).val/5);
                 break;
+				
+			case 0xF7: // = distance to wall: back
+				distance_back = round(fetch_from_buffer(&receive_buffer).val/5);
+				break;	
                 
             case 0xFA: // distance driven:
                 distance_driven = round(fetch_from_buffer(&receive_buffer).val/5);
-                break;
+                break;	
                 
             case 0xF9:  // tejp sensor floor:
                 break;
