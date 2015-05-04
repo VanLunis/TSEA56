@@ -155,33 +155,47 @@ int main(void)
     {
         update_values_from_sensor();
 		
+		// In corridor?
 		if(distance_front > FRONT_MAX_DISTANCE)
 		{
+			// _______ DRIVE FORWARD________:
 			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
 			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
 		}
-		else
+		// Wall in front and open backwards?
+		else if(distance_front < FRONT_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
 		{
+			// Corridor right turn 90 degrees?
 			if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
-			{	// ________ TURN RIGHT ______
-				
+			{	// ________ TURN RIGHT ______	
 				turn_right_corridor();
 			}
+			// Corridor left turn 90 degrees?
 			else if (distance_right_back < FRONT_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
 			{	// ________ TURN LEFT ______
 				turn_left_corridor();
 			}
+			// Dead end?
 			else if (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
 			{	// _____ DEAD-END = return _______
 				dead_end();
 			}
+			/*
+			// Straight into a T-crossing with open left and right?
 			else if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
 			{
-				// Straight into a T-crossing
+				// ________ TURN RIGHT ______	
 				turn_right_corridor();
 			}
+			*/
 		}
-		if(distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+		// For safety if both front and back too close:
+		else
+		{
+			stop();
+		}
+		
+		if(distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
 		{	// _______ CROSSROAD ______: hard-coded right-turn!
 			turn_right_crossroad();
 		}
@@ -275,10 +289,6 @@ void init_control_module(void)
     // Initiate gear as 11: straight forward
     PORTC = (1<<PORTC1) | (1<<PORTC0);
     
-    ///////////////////////// TEST TEST TEST /////////////////////////
-    DDRA = 0xFF;
-    //////////////////////////////////////////////////////////////////
-    
 };
 
 //_________________________ COMMUNICATION FUNCTIONS _________________________
@@ -357,6 +367,7 @@ void update_values_from_sensor(){
                 break;
 				
 			case 0xF7: // = distance to wall: back
+			
 				distance_back = round(fetch_from_buffer(&receive_buffer).val/5);
 				break;	
                 
@@ -613,7 +624,7 @@ void turn_right_corridor() {
 	_delay_ms(50);
 	
 	// Rotate right:
-    while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+    while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
     {
         rotate_right(60);
         update_values_from_sensor();
@@ -622,9 +633,28 @@ void turn_right_corridor() {
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < 1 )) // && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < 1 && distance_back < WALLS_MAX_DISTANCE))
 	{
-		if(distance_left_back > distance_left_front)
+		if (distance_front < FRONT_MAX_DISTANCE)
+		{
+			if (distance_left_back > distance_left_front)
+			{
+				while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
+				{
+					rotate_right(60);
+					update_values_from_sensor();
+				}
+			}
+			else
+			{
+				while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
+				{
+					rotate_left(60);
+					update_values_from_sensor();
+				}
+			}			
+		}
+		else if(distance_left_back > distance_left_front)
 		{
 			rotate_right(40);
 		}
@@ -645,7 +675,7 @@ void turn_left_corridor() {
 	_delay_ms(50);
 	_delay_ms(50);	
     
-    while ( !(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE ))
+    while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
     {
         rotate_left(60);
         update_values_from_sensor();
@@ -655,9 +685,29 @@ void turn_left_corridor() {
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < 1))// && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE ))
+	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < 1 && distance_back < WALLS_MAX_DISTANCE))	
 	{
-		if(distance_right_front > distance_right_back)
+		if (distance_front < FRONT_MAX_DISTANCE)
+		{
+			if(distance_right_front > distance_right_back)
+			{
+				 while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
+				 {
+					 rotate_right(60);
+					 update_values_from_sensor();
+				 }
+			}
+			else
+			{
+				 while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
+				 {
+					 rotate_left(60);
+					 update_values_from_sensor();
+				 }
+			}
+			
+		}
+		else if(distance_right_front > distance_right_back)
 		{
 			rotate_right(40);
 		}
@@ -718,7 +768,7 @@ void turn_right_crossroad(){
     
 }
 
-/*
+
 void turn_left_crossroad(){
     // stopp
     for (int i = 0; i<500; i++){ stop();_delay_ms(1);}
@@ -754,7 +804,7 @@ void turn_left_crossroad(){
     for (int i = 0; i<500; i++){ stop();_delay_ms(1);}
     
 }
-*/
+
 
 // _________________________ MOTOR FUNCTIONS ___________________________
 void set_speed_right_wheels(unsigned char new_speed_percentage){
