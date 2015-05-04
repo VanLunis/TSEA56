@@ -617,7 +617,7 @@ void turn_right_corridor() {
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front)))// < 1 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < 1 )) // && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
 	{
 		if(distance_left_back > distance_left_front)
 		{
