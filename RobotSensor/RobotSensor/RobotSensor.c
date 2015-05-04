@@ -358,7 +358,7 @@ void queue_to_send(){
      */
     
     //Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
-    if (voltage[5] >= 2 && waswhite){
+    if (voltage[5] >= 2 && !black){
         black = 1;
 		add_to_buffer(&SPI_send_buffer, 0xFA, black);
     }
