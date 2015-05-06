@@ -24,7 +24,8 @@ volatile struct data_byte temp_data;
 
 struct data_buffer sensor_buffer;
 struct data_buffer control_buffer;
-struct data_buffer pc_buffer;
+struct data_buffer pc_buffer_from_sensor;
+struct data_buffer pc_buffer_from_control;
 
 void init_master(void);
 
@@ -64,17 +65,23 @@ int main(void)
             send_to_control();
         }
         
+		if(!buffer_empty(&pc_buffer_from_sensor))
+		{
+			
+			USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
+			USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
+			discard_from_buffer(&pc_buffer_from_sensor);
+		}
+		
         receive_from_control();
         
-        // TODO check connection
-        
-        if(!buffer_empty(&pc_buffer))
-        {
-            
-            USART_Transmit(fetch_from_buffer(&pc_buffer).type);
-            USART_Transmit(fetch_from_buffer(&pc_buffer).val);
-            discard_from_buffer(&pc_buffer);
-        }
+		if(!buffer_empty(&pc_buffer_from_control))
+		{
+			
+			USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).type);
+			USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
+			discard_from_buffer(&pc_buffer_from_control);
+		}
         //_delay_us(delay_time);
     }
 }
@@ -134,7 +141,8 @@ void init_master(void)
     // Init data buffers in master
     buffer_init(&sensor_buffer);
     buffer_init(&control_buffer);
-    buffer_init(&pc_buffer);
+    buffer_init(&pc_buffer_from_sensor);
+	buffer_init(&pc_buffer_from_control);
     
     // Init serial USART (bluetooth)
     /* Set baud rate */
@@ -238,14 +246,14 @@ void receive(int slave)
     if (slave == 1)
     {
         current_slave_ready = &sensor_ready;
-        PORTD =(0<<PORTD7)|(0<<PORTD6); // Order slave 1 to adapt send mode
-        PORTD =(0<<PORTD7)|(1<<PORTD6);
+        PORTD =(0<<PORTD7)|(1<<PORTD6); // Order slave 1 to adapt send mode
+		PORTD =(0<<PORTD7)|(0<<PORTD6); 
     }
     else if(slave == 2)
     {
         current_slave_ready = &control_ready;
-        PORTD = (0<<PORTD7)|(0<<PORTD6); // Order slave 2 to adapt send mode
-        PORTD = (1<<PORTD7)|(0<<PORTD6);
+		PORTD = (1<<PORTD7)|(0<<PORTD6); // Order slave 2 to adapt send mode
+        PORTD = (0<<PORTD7)|(0<<PORTD6); 
     }
     transmission_status=0;
     _delay_us(delay_time);
@@ -293,9 +301,13 @@ void receive(int slave)
                     if (slave == 1)
                     {
                         add_to_buffer(&control_buffer, temp_data.type, temp_data.val);
+						_delay_us(delay_time);
+						add_to_buffer(&pc_buffer_from_sensor, temp_data.type, temp_data.val); //otherwise add to buffer!
                     }
-                    _delay_us(delay_time);
-                    add_to_buffer(&pc_buffer, temp_data.type, temp_data.val); //otherwise add to buffer!
+					else if (slave == 2)
+					{
+						add_to_buffer(&pc_buffer_from_control, temp_data.type, temp_data.val);
+					}
                 }
                 _delay_us(delay_time);
                 break;

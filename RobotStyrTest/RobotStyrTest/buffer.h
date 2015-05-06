@@ -9,7 +9,7 @@
 
 #ifndef HEADER_FILE
 #define HEADER_FILE
-#define BUFFER_SIZE 255
+#define BUFFER_SIZE 254
 
 // Byta från char till uint8_t?
 struct data_byte
@@ -49,6 +49,17 @@ int buffer_empty(struct data_buffer* my_buffer)
 	}
 	return 0;
 };
+
+// Add garbage collector?
+void discard_from_buffer(struct data_buffer* my_buffer)
+{
+	if(buffer_empty(my_buffer)==0)
+	{
+		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
+		my_buffer->full_revolution = 0;
+	}
+};
+
 
 void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 {
@@ -96,16 +107,5 @@ struct data_byte fetch_from_buffer(struct data_buffer* my_buffer)
 	}
 	return null_data_byte;
 };
-
-// Add garbage collector?
-void discard_from_buffer(struct data_buffer* my_buffer)
-{
-	if(buffer_empty(my_buffer)==0)
-	{
-		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
-		my_buffer->full_revolution = 0;
-	}
-};
-
 
 #endif

@@ -328,7 +328,7 @@ void read(){
 
 void queue_to_send(){
     double voltage[8];
-    int waswhite;
+    int black = 0;
     double distance;
     
     for (int i=0; i<8; i++){

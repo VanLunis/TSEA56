@@ -9,7 +9,7 @@
 
 #ifndef HEADER_FILE
 #define HEADER_FILE
-#define BUFFER_SIZE 255
+#define BUFFER_SIZE 254
 
 // Byta från char till uint8_t?
 struct data_byte

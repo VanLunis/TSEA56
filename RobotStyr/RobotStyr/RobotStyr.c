@@ -58,7 +58,7 @@ unsigned char distance_front = 0;
 unsigned char distance_back = 0;
 unsigned char distance_driven = 0;
 
-void init_control_module(void);
+void init_control_module(void);//X
 
 // Communication functions:
 void send_to_master(struct data_buffer* my_buffer);
