@@ -99,8 +99,11 @@ void forward_slow();
 // Direction functions:
 void turn_forward();
 void turn_back();
+void turn_back_control_on_both_walls();
 void turn_left();
+void turn_left_control_on_right_wall();
 void turn_right();
+void turn_right_control_on_left_wall();
 
 // Maze functions:
 unsigned char get_possible_directions();
@@ -380,7 +383,7 @@ unsigned char get_possible_directions()
 {	
 	//TODO: Check in all crossings/turns if this really shows correct values
 
-	unsigned char possible_directions = 0x01; 
+	unsigned char possible_directions = 0x00; 
     /*
 	
 	LRFB	
@@ -391,7 +394,10 @@ unsigned char get_possible_directions()
      
     ex: (----|1100) => right AND left open
     */
-    
+    if (distance_back > 28)
+    {
+		possible_directions |= 0x01;
+    }
     if (distance_front > WALLS_MAX_DISTANCE) 
 	{
         // open forward 
@@ -430,6 +436,10 @@ void make_direction_decision()
 	{
 		turn_left();
 		turn_forward();
+	}
+	else
+	{
+		stop();
 	}
 }
 
@@ -631,7 +641,14 @@ void turn_forward()
 
 void turn_back()
 {	
-	// TODO: Control in different ways depending on kind of crossing/turn
+	if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
+	{
+		turn_back_control_on_both_walls();
+	}
+}
+
+void turn_back_control_on_both_walls()
+{
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -673,15 +690,18 @@ void turn_back()
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	
-		
-	
 }
 
 void turn_left()
 {
-	// TODO: Control in different ways depending on kind of crossing/turn
-	
+	if(distance_front < WALLS_MAX_DISTANCE)
+	{
+		turn_left_control_on_right_wall();
+	}
+}
+
+void turn_left_control_on_right_wall()
+{
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -735,7 +755,14 @@ void turn_left()
 
 void turn_right()
 {
-	// TODO: Control in different ways depending on kind of crossing/turn
+	if(distance_front < WALLS_MAX_DISTANCE)
+	{
+		turn_right_control_on_left_wall();
+	}
+}
+
+void turn_right_control_on_left_wall()
+{
 	
 	stop();
 	_delay_ms(50);
@@ -786,6 +813,7 @@ void turn_right()
 	_delay_ms(50);
 	_delay_ms(50);
 }
+
 // _________________________ MOTOR FUNCTIONS __________________________
 void set_speed_right_wheels(unsigned char new_speed_percentage){
     if (new_speed_percentage <= 100 && new_speed_percentage >= 0 )
