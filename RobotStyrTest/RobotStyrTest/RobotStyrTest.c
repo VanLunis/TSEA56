@@ -172,7 +172,10 @@ int main(void)
 	
 	for(;;)
 	{
-		update_values_from_sensor();
+		while(!buffer_empty(&receive_buffer))
+		{
+			update_values_from_sensor();	
+		}
 			
 		// TODO: Check for 3 or 4 way crossing with open front
 			
@@ -379,7 +382,8 @@ unsigned char get_possible_directions()
 
 	unsigned char possible_directions = 0x01; 
     /*
-	RLFB	
+	
+	LRFB	
     possible_direction:
     (-----|--1-) => forward open
     (-----|-1--) => right open
@@ -393,12 +397,12 @@ unsigned char get_possible_directions()
         // open forward 
         possible_directions |= 0x02;
     }
-    if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )
+    if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||(distance_right_front > 28 && distance_front < 15))
     {
         // open to right:
         possible_directions |= 0x04;
     }
-    if (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+    if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||(distance_left_front > 28 && distance_front < 15))
     {
         // open to left:
         possible_directions |= 0x08;
@@ -409,7 +413,7 @@ unsigned char get_possible_directions()
 void make_direction_decision()
 {
 	unsigned char possible_directions = get_possible_directions();
-	//add_to_buffer(&send_buffer, 0xF8, possible_directions);
+	add_to_buffer(&send_buffer, 0xF8, possible_directions);
 	// TODO: Implement the actual algorithm we want to use
 	
 	if(possible_directions == 0x01)
@@ -417,14 +421,14 @@ void make_direction_decision()
 		turn_back();
 		turn_forward();
 	}	
-	else if(possible_directions == 0x09)
-	{
-		turn_left();
-		turn_forward();
-	}
 	else if(possible_directions == 0x05)
 	{
 		turn_right();
+		turn_forward();
+	}
+	else if(possible_directions == 0x09)
+	{
+		turn_left();
 		turn_forward();
 	}
 }
@@ -516,19 +520,20 @@ double controller(double e, double alpha, double e_prior, double alpha_prior, do
 
 void setMotor(double u, double alpha){
     
-    if ( u < NEGATIVE_LIMIT){					sharp_right();      }
-    else if ( u < SLIGHT_NEGATIVE_LIMIT){       slight_right();     }
-    else if ( u < SLIGHT_POSITIVE_LIMIT){
-        if (alpha > 5)
+    if ( u < NEGATIVE_LIMIT){sharp_right();}
+    else if ( u < SLIGHT_NEGATIVE_LIMIT){slight_right();}
+    else if ( u < SLIGHT_POSITIVE_LIMIT){        
+		if (alpha > 5)
         {
-												forward_slow();
+			forward_slow();
         }
-        else{
-												forward();
+        else
+		{
+			forward();
         }
     }
-    else if ( u < POSITIVE_LIMIT)	{           slight_left();      }
-    else{										sharp_left();       }
+    else if ( u < POSITIVE_LIMIT){ slight_left(); }
+    else{ sharp_left(); }
     
 }
 

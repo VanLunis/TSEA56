@@ -348,6 +348,7 @@ void queue_to_send(){
     add_to_buffer(&SPI_send_buffer, 0xFC, temp_front_left);
     add_to_buffer(&SPI_send_buffer, 0xFB, temp_rear_left);
 	add_to_buffer(&SPI_send_buffer, 0xF7, temp_back);
+	add_to_buffer(&SPI_send_buffer, 0xF6, (uint8_t)100*voltage[0]);
     //*/
     
     /*
