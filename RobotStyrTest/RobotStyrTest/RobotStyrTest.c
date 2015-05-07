@@ -105,6 +105,7 @@ void turn_left();
 void turn_left_control_on_right_wall();
 void turn_right();
 void turn_right_control_on_left_wall();
+void turn_right_control_on_zero_walls();
 
 // Maze functions:
 unsigned char get_possible_directions();
@@ -190,7 +191,10 @@ int main(void)
 			// Stop, check directions and decide which way to go:
 			make_direction_decision();
 		}
-		if (distance_front > 30 && distance_back > 30 && ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE) || (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+		if (distance_front > 30 && distance_back > 30 && 
+		((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+		 (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+		 (distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 		{
 			make_direction_decision();
 		}
@@ -216,7 +220,7 @@ int main(void)
 ISR(SPI_STC_vect)
 {
     PORTB = (1<<PORTB3);
-    PORTB = (0<<PORTB3);// OBS changed order so low when not active
+    PORTB = (0<<PORTB3);
     //Depending on the current mode: do things.
     if(mode == 0)
     {
@@ -250,7 +254,7 @@ void init_control_module(void)
     // SPI
     SPCR = (1<<SPIE)|(1<<SPE)|(0<<DORD)|(0<<MSTR)|(0<<CPOL)|(0<<CPHA);
     DDRB = (1<<DDB6)|(1<<DDB3);
-    PINB = (0<<PINB4); // OBS changed
+    PINB = (0<<PINB4);
     
     // IRQ1 and IRQ0 activated on rising edge
     EICRA = (1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
@@ -401,11 +405,11 @@ unsigned char get_possible_directions()
      
     ex: (----|1100) => right AND left open
     */
-    if (distance_back > 28)
+    if (distance_back > 25)
     {
 		possible_directions |= 0x01;
     }
-    if (distance_front > WALLS_MAX_DISTANCE) 
+    if (distance_front > 25)
 	{
         // open forward 
         possible_directions |= 0x02;
@@ -447,7 +451,11 @@ void make_direction_decision()
 	}
 	//TODO: else if(possible_directions == 0x0B)// closed right t-crossing
 	//TODO: else if(possible_directions == 0x0D)// closed front t-crossing
-	//TODO: else if(possible_directions == 0x0F)// 4-way-crossing
+	else if(possible_directions == 0x0F)// 4-way-crossing
+	{
+		turn_right();
+		turn_forward();	
+	}
 	else
 	{
 		stop();
@@ -774,6 +782,10 @@ void turn_right()
 	{
 		turn_right_control_on_left_wall();
 	}
+	else if (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+	{
+		turn_right_control_on_zero_walls();
+	}
 }
 
 void turn_right_control_on_left_wall()
@@ -827,6 +839,40 @@ void turn_right_control_on_left_wall()
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
+}
+
+void turn_right_control_on_zero_walls()
+{
+	 stop();
+	 _delay_ms(50);
+	 _delay_ms(50);
+	 
+	 // short hard-coded rotate:
+	 rotate_right(60);
+	 for (int i = 0; i<400; i++){ _delay_ms(1);}
+	 
+	 //  STOPP
+	 stop();
+	 _delay_ms(50);
+	 _delay_ms(50);
+	 
+	 while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
+	 {
+		 rotate_right(60);
+		 update_sensors_and_empty_receive_buffer();
+	 }
+	 
+	 //  STOPP
+	 stop();
+	 _delay_ms(50);
+	 _delay_ms(50);
+	 
+	 rotate_right(60);
+	 for (int i = 0; i<180; i++){ _delay_ms(1);}
+	 //  STOPP
+	 stop();
+	 _delay_ms(50);
+	 _delay_ms(50);
 }
 
 // _________________________ MOTOR FUNCTIONS __________________________
