@@ -170,18 +170,12 @@ int main(void)
 	double alpha_prior = 0;
 	double e_prior_prior = 0;
 	double alpha_prior_prior = 0;
-	double u = 0;
 	
 	stop();
 	
 	for(;;)
 	{
-		while(!buffer_empty(&receive_buffer))
-		{
-			update_sensors_and_empty_receive_buffer();	
-		}
-			
-		// TODO: Check for 3 or 4 way crossing with open front
+		update_sensors_and_empty_receive_buffer();	
 			
 		// In a straight corridor?:
 		if(distance_front > FRONT_MAX_DISTANCE) // front > 13
@@ -194,6 +188,10 @@ int main(void)
 		else // front < 13
 		{
 			// Stop, check directions and decide which way to go:
+			make_direction_decision();
+		}
+		if (distance_front > 30 && distance_back > 30 && ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE) || (distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+		{
 			make_direction_decision();
 		}
 	
@@ -412,12 +410,12 @@ unsigned char get_possible_directions()
         // open forward 
         possible_directions |= 0x02;
     }
-    if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||(distance_right_front > 28 && distance_front < 15))
+    if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||((distance_right_front > 28 || distance_right_back > 28) && distance_front < 15))//added distance_right_back to test
     {
         // open to right:
         possible_directions |= 0x04;
     }
-    if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||(distance_left_front > 28 && distance_front < 15))
+    if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||((distance_left_front > 28 || distance_left_back > 28) && distance_front < 15))//added ditance_left_back to test
     {
         // open to left:
         possible_directions |= 0x08;
@@ -431,25 +429,32 @@ void make_direction_decision()
 	add_to_buffer(&send_buffer, 0xF8, possible_directions);
 	// TODO: Implement the actual algorithm we want to use
 	
-	if(possible_directions == 0x01)
+	if(possible_directions == 0x01)// dead end
 	{
 		turn_back();
 		turn_forward();
 	}	
-	else if(possible_directions == 0x05)
+	else if(possible_directions == 0x05)// right turn 90 degrees 
 	{
 		turn_right();
 		turn_forward();
 	}
-	else if(possible_directions == 0x09)
+	//TODO: else if(possible_directions == 0x07)// closed left t-crossing
+	else if(possible_directions == 0x09)// left turn 90 degrees
 	{
 		turn_left();
 		turn_forward();
 	}
+	//TODO: else if(possible_directions == 0x0B)// closed right t-crossing
+	//TODO: else if(possible_directions == 0x0D)// closed front t-crossing
+	//TODO: else if(possible_directions == 0x0F)// 4-way-crossing
 	else
 	{
 		stop();
-		
+		_delay_ms(50);
+		_delay_ms(50);
+		// Indicates that something went wrong
+		// TODO: Add functionality to correct position and continue
 	}
 }
 
@@ -726,7 +731,7 @@ void turn_left_control_on_right_wall()
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while (!(distance_front > 26 && abs(distance_right_back - distance_right_front) < 1 && distance_back < WALLS_MAX_DISTANCE))// changed from WALLS_MAX_DISTANCE to 26
+	while (!(distance_front > 26 && abs(distance_right_back - distance_right_front) < 1 && distance_back < WALLS_MAX_DISTANCE))
 	{
 		if (distance_front < FRONT_MAX_DISTANCE)
 		{
@@ -788,7 +793,7 @@ void turn_right_control_on_left_wall()
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
-	while(!(distance_front > 26 && abs(distance_left_back - distance_left_front) < 1 && distance_back < WALLS_MAX_DISTANCE))// changed from WALLS_MAX_DISTANCE to 26
+	while(!(distance_front > 26 && abs(distance_left_back - distance_left_front) < 1 && distance_back < WALLS_MAX_DISTANCE))
 	{
 		if (distance_front < FRONT_MAX_DISTANCE)
 		{
