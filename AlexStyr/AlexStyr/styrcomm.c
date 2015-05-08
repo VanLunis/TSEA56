@@ -165,7 +165,7 @@ void send_map(int map[17][17])
 		 add_to_buffer(&send_buffer,0xEE - (2*row) ,char_to_send); // EDIT TYPE NUMBER!
 		 
 		 // loop for the following 9-15 columns
-		 for (int column = 8; column<15; column++)
+		 for (int column = 8; column<16; column++)
 		 {
 			 if (map[row+1][column+1] == 1) // +1 since the map is 17x17
 			 {
