@@ -376,7 +376,7 @@ void queue_to_send(){
 	 }
 	   
     //Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
-    if (voltage[6] >= 3){
+    if (voltage[6] >= 4.2){
         goal_detected = 1;
     }
     else{
