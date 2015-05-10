@@ -145,39 +145,56 @@ void remote_control(char control_val){
 
 void send_map(int map[17][17])
 {
-	 unsigned char char_to_send = 0x00;
-	 
-	 for (int row = 0; row<15; row++) // Loop for each row
-	 {
-		 
-		 // loop for the first 8 columns in each row:
-		 for (int column = 0; column<8; column++)
-		 {
-			 if (map[row+1][column+1] == 1) // +1 since the map is 17x17
-			 {
-				 bit_set(char_to_send, BIT(column));
-			 }
-			 else
-			 {
-				 bit_clear(char_to_send, BIT(column));
-			 }
-		 }
-		 add_to_buffer(&send_buffer,0xEE - (2*row) ,char_to_send); // EDIT TYPE NUMBER!
-		 
-		 // loop for the following 9-15 columns
-		 for (int column = 8; column<16; column++)
-		 {
-			 if (map[row+1][column+1] == 1) // +1 since the map is 17x17
-			 {
-				 bit_set(char_to_send, BIT(column-8));
-			 }
-			 else
-			 {
-				 bit_clear(char_to_send, BIT(column-8));
-			 }
-		 }
-		 add_to_buffer(&send_buffer,0xEE - (2*row + 1),char_to_send); // EDIT TYPE NUMBER!
-		 
-		 
-	 }// end of row loop
+    unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
+    
+    for (int row = 0; row<15; row++) // Loop for each row
+    {
+        
+        // loop for the first 5 columns in each row:
+        for (int column = 0; column<5; column++)
+        {
+            if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+            {
+                bit_set(char_to_send, BIT(column));
+            }
+            else
+            {
+                bit_clear(char_to_send, BIT(column));
+            }
+        }
+        add_to_buffer(&send_buffer,0xEE - (3*row) ,char_to_send); // EDIT TYPE NUMBER!
+        
+        char_to_send = 0x80;
+        // loop for the following 6-10 columns
+        for (int column = 5; column<10; column++)
+        {
+            
+            if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+            {
+                bit_set(char_to_send, BIT(column-5));
+            }
+            else
+            {
+                bit_clear(char_to_send, BIT(column-5));
+            }
+        }
+        add_to_buffer(&send_buffer,0xEE - (3*row + 1),char_to_send); // EDIT TYPE NUMBER!
+        
+        char_to_send = 0x80;
+        // loop for the following 11-15 columns
+        for (int column = 10; column<15; column++)
+        {
+            if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+            {
+                bit_set(char_to_send, BIT(column-10));
+            }
+            else
+            {
+                bit_clear(char_to_send, BIT(column-10));
+            }
+        }
+        add_to_buffer(&send_buffer,0xEE - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
+        
+        
+    }// end of row loop
 }

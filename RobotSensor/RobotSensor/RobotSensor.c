@@ -212,8 +212,7 @@ double median(double value[]){
         }
     }
     //returnerar median
-	int half;
-    return value[13];
+    return value[2];
 }
 
 
