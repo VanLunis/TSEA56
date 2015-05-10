@@ -34,11 +34,15 @@ void turn_forward()
     
     stop(); _delay_ms(50); _delay_ms(50);
     
-    while (!(distance_left_back < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE))
-    {
-        alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-        go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-        update_sensors_and_empty_receive_buffer();
+    if (distance_front > WALLS_MAX_DISTANCE) {
+        
+    
+    while (!(distance_left_back < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE ))
+        {
+            alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+            go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+            update_sensors_and_empty_receive_buffer();
+        }
     }
     //  STOPP
     stop(); _delay_ms(50); _delay_ms(50);
@@ -80,6 +84,7 @@ void turn_back_control_on_both_walls()
     stop();
     _delay_ms(50);
     _delay_ms(50);
+    update_sensors_and_empty_receive_buffer();
     while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && abs(distance_left_back - distance_left_front) < 1.2))
     {
         if(distance_left_back > distance_left_front)
@@ -121,9 +126,11 @@ void turn_left_control_on_right_wall()
     stop();
     _delay_ms(50);
     _delay_ms(50);
-    while (!(distance_front > 26 && abs(distance_right_back - distance_right_front) < 1 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))// OBS added 2 last
+    update_sensors_and_empty_receive_buffer();
+    
+    while (!(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
     {
-        if (distance_front < FRONT_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)// OBS added 2 last
+        if (distance_front < FRONT_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)
         {
             if(distance_right_front > distance_right_back)
             {
@@ -169,6 +176,11 @@ void turn_right()
     {
         turn_right_control_on_zero_walls();
     }
+    else if(((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||(distance_right_back > 28)||(distance_right_front > 28))
+            && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    {
+        turn_right_control_on_back_wall();
+    }
 }
 void turn_right_control_on_left_wall()
 {
@@ -186,9 +198,10 @@ void turn_right_control_on_left_wall()
     stop();
     _delay_ms(50);
     _delay_ms(50);
-    while(!(distance_front > 26 && abs(distance_left_back - distance_left_front) < 1 && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))// OBS added 2 last
+    update_sensors_and_empty_receive_buffer();
+    while(!(distance_front > 30 && abs(distance_left_back - distance_left_front) < 1 && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
     {
-        if (distance_front < FRONT_MAX_DISTANCE || distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE)// OBS added 2 last
+        if (distance_front < FRONT_MAX_DISTANCE || distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE)
         {
             if (distance_left_back > distance_left_front)
             {
@@ -220,6 +233,7 @@ void turn_right_control_on_left_wall()
     stop();
     _delay_ms(50);
     _delay_ms(50);
+    
 }
 void turn_right_control_on_zero_walls()
 {

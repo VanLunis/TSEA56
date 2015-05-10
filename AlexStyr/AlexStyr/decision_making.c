@@ -79,7 +79,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     }
     else if(possible_directions == 0x07 || possible_directions == 0x06)// closed left t-crossing //OBS: added 6 to test
     {
-        turn_right_control_on_back_wall();
+        turn_right();
         turn_forward();
     }
     else if(possible_directions == 0x09 || possible_directions == 0x08)// left turn 90 degrees //OBS: added 8 to test
