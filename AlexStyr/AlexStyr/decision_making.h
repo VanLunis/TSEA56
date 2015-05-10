@@ -8,8 +8,8 @@
 #include "map.h"
 #include "shortest_path.h"
 
-point unexplored[50];
-int u;
+point unvisited[50];
+int un;
 
 void make_decision();
 

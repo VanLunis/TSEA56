@@ -1,4 +1,5 @@
 #include "action.h"
+#include "control.h"
 
 // DIRECTION FUNCTIONS: -----------------------------------------
 // Turn forward:
@@ -285,4 +286,43 @@ void turn_right_control_on_back_wall()
     stop();
     _delay_ms(50);
     _delay_ms(50);
+}
+
+void run_command()
+{
+	unsigned char possible_directions = get_possible_directions();
+	add_to_buffer(&send_buffer, 0xF8, possible_directions);
+	// TODO: Implement the actual algorithm we want to use
+		
+	if(command[c--] == 'b')// dead end
+	{
+		turn_back();
+	}
+	else if(command[c--] == 'r')// right turn 90 degrees //OBS: added 4 to test
+	{
+		turn_right();
+	}
+	else if(command[c--] == 'l')
+	{
+		turn_left();
+	}
+	else if(command[c - 1] == 'f' && command[c] == 'f')
+	{	
+		int driven_distance = 0;
+		while(driven_distance < 40){
+			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+		            
+			// update driven_distance:
+			driven_distance = update_driven_distance(driven_distance, wheel_click, wheel_click_prior);
+			wheel_click_prior = wheel_click;
+		}
+		robot.distance = driven_distance;
+		c--;
+	}
+	else if(command[c--] == 'f')
+	{
+		turn_forward();	
+	}
+	
 }

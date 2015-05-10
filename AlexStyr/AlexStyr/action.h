@@ -1,5 +1,8 @@
 #include "styr_defs.h"
 #include <util/delay.h>
+#include "styrcomm.h"
+#include "shortest_path.h"
+#include "control.h"
 
 #ifndef ACTION_H
 #define ACTION_H
@@ -9,6 +12,7 @@
 
 // DIRECTION FUNCTIONS: -----------------------------------------
 // Turn forward:
+
 void turn_forward();
 
 // Turn back:
@@ -30,5 +34,7 @@ void turn_right_control_on_back_wall();
 // MAZE FUNCTIONS: -----------------------------------------------
 unsigned char get_possible_directions();
 void make_direction_decision();
+
+void run_command();
 
 #endif

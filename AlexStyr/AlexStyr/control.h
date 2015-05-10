@@ -13,6 +13,17 @@
 #define K_alpha_P 20    // proportional gain for angular error alpha
 #define K_alpha_D 70    // derivative gain for angular error alpha
 
+// Initiates control variables
+double e; // Position error
+double alpha; // Angle error
+    
+double e_prior;
+double alpha_prior;
+double e_prior_prior;
+double alpha_prior_prior;
+unsigned char driven_distance;
+unsigned char wheel_click_prior;
+
 void go_forward(double * ptr_e, double * ptr_e_prior, double * ptr_e_prior_prior, double* ptr_alpha, double* ptr_alpha_prior, double* ptr_alpha_prior_prior );
 double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior);
 void setMotor(double u, double alpha);

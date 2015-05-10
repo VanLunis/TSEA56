@@ -2,19 +2,28 @@
 #include "map.h"
 
 void getCommands(point end){
-    int first_command=1;
-
-    int direction = 0;
+	int direction;
+	
+	if (robot.xdir = 0 && robot.ydir == 1)
+	{
+		direction = 0;
+	}
+	else if (robot.xdir ==1 && robot.ydir == 0)
+	{
+		direction = 1;	
+	}
+	else if (robot.xdir == 0 && robot.ydir == -1)
+	{
+		direction = 2;
+	}
+	else if (robot.xdir == -1 && robot.ydir == 0)
+	{
+		direction = 3;
+	}
+	
     for (int i=0; i < costmap[end.x][end.y]; i++)
     {
-            if(first_command==1){
-                //printf("Go forwards!\n");
-                command[c] = 'f';
-                c++;
-                first_command=0;
-                continue;
-            }
-
+           
             if(path[i].x < path[i+1].x)
             {
 
@@ -30,13 +39,19 @@ void getCommands(point end){
                     c++;
 
                 }
+				else if(direction == 3)
+				{
+					//Turn back
+					command[c] = 'b';
+					c++;
+				}
             //    printf("Go forwards.\n");
                 command[c] = 'f';
                 c++;
                 direction = 1;
 
             }
-            else if(path[i].x < path[i-1].x)
+            else if(path[i].x > path[i+1].x)
             {
                 if(direction==0){
                 //   printf("Turn left, ");
@@ -50,6 +65,12 @@ void getCommands(point end){
                     c++;
 
                 }
+				else if(direction == 1)
+				{
+					//Turn back
+					command[c] = 'b';
+					c++;
+				}
             //    printf("Go forwards!\n");
                 direction=3;
                 command[c] = 'f';
@@ -59,24 +80,30 @@ void getCommands(point end){
             else if(path[i].y < path[i+1].y)
             {
                 if(direction==1){
-                    printf("Turn left, ");
+                    //printf("Turn left, ");
                     command[c] = 'l';
                     c++;
 
                 }
                 else if(direction==3){
-                    printf("Turn right, ");
+                    //printf("Turn right, ");
                     command[c] = 'r';
                     c++;
 
                 }
+				else if(direction == 2)
+				{
+					//Turn back
+					command[c] = 'b';
+					c++;
+				}
              //   printf("Go forwards!\n");
                 direction=0;
                 command[c] = 'f';
                 c++;
 
             }
-            else if(path[i].y < path[i+1-1].y)
+            else if(path[i].y > path[i+1].y)
             {
                 if(direction==1){
                   //  printf("Turn right, ");
@@ -90,6 +117,12 @@ void getCommands(point end){
                     c++;
 
                 }
+				else if(direction == 0)
+				{
+					//Turn back
+					command[c] = 'b';
+					c++;
+				}
                // printf("Go forwards!\n");
                 direction=2;
                 command[c] = 'f';

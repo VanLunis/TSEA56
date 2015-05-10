@@ -43,21 +43,21 @@ unsigned char get_possible_directions()
     {
         // open to right:
         possible_directions |= 0x04;
-		robot.rwall = 1;
+		robot.rwall = 0;
     }
 	else
 	{
-		robot.rwall = 0;
+		robot.rwall = 1;
 	}
     if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||((distance_left_front > 28 || distance_left_back > 28) && distance_front < 15))//added ditance_left_back to test
     {
         // open to left:
         possible_directions |= 0x08;
-		robot.lwall = 1;
+		robot.lwall = 0;
     }
 	else
 	{
-		robot.lwall = 0;
+		robot.lwall = 1;
 	}
     return possible_directions;
 }
@@ -154,24 +154,24 @@ void make_decision()
 
     if (!robot.lwall)
     {
-        unexplored[u].x = lx;
-        unexplored[u++].y = ly;
+        unvisited[un].x = lx;
+        unvisited[un++].y = ly;
     }
 
     if (!robot.fwall)
     {
-        unexplored[u].x = fx;
-        unexplored[u++].y = fy;
+        unvisited[un].x = fx;
+        unvisited[un++].y = fy;
     }
 
     if (!robot.rwall)
     {
-        unexplored[u].x = rx;
-        unexplored[u].y = ry;
+        unvisited[un].x = rx;
+        unvisited[un].y = ry;
     }
 
     point temp = {robot.x, robot.y};
-    floodfill(temp, unexplored[u]);
-    traceBack(costmap,  unexplored[u]);
-    getCommands(unexplored[u--]);
+    floodfill(temp, unvisited[un]);
+    traceBack(costmap,  unvisited[un]);
+    getCommands(unvisited[un--]);
 }

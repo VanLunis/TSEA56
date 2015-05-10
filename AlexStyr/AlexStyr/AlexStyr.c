@@ -9,10 +9,6 @@
 
 
 // Include files
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-#include <stdlib.h>
 #include "styr_defs.h"
 #include "bitman.h"
 #include "styrcomm.h"
@@ -24,6 +20,10 @@
 #include "motor.h"
 #include "steering.h"
 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+#include <stdlib.h>
 
 
 
@@ -105,17 +105,6 @@ int main(void)
     {
         update_values_from_sensor();
     }
-    
-    // Initiates control variables
-    double e = 0; // Position error
-    double alpha = 0; // Angle error
-    
-    double e_prior = 0;
-    double alpha_prior = 0;
-    double e_prior_prior = 0;
-    double alpha_prior_prior = 0;
-    unsigned char driven_distance = 0;
-    unsigned char wheel_click_prior = 0;
 	
 	init_map();
 	init_floodtest();
@@ -160,6 +149,7 @@ int main(void)
             // update driven_distance:
             driven_distance = update_driven_distance(driven_distance, wheel_click, wheel_click_prior);
             wheel_click_prior = wheel_click;
+			robot.distance = driven_distance;
             /*
             // goal (=tape on the floor) found => stop for 1 sec
             if (goal_found == 1)

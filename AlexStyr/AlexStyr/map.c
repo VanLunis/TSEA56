@@ -94,7 +94,7 @@ void init_map()
         for (int j=0; j<MAP_SIZE; j++)
         {
             driveable[i][j] = 1;
-            explored[i][j] = 1;
+            explored[i][j] = 0;
         }
     }
 }
