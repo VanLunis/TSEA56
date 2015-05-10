@@ -141,6 +141,7 @@ unsigned char update_driven_distance(unsigned char driven_distance, unsigned cha
 //Skall kallas i beslutpunkter
 void make_decision()
 {
+	driven_distance = 0;
     int lx = robot.x-robot.ydir;
     int ly = robot.y+robot.xdir;
 
@@ -167,11 +168,11 @@ void make_decision()
     if (!robot.rwall)
     {
         unvisited[un].x = rx;
-        unvisited[un].y = ry;
+        unvisited[un++].y = ry;
     }
 
     point temp = {robot.x, robot.y};
     floodfill(temp, unvisited[un]);
-    traceBack(costmap,  unvisited[un]);
+    traceBack(costmap, unvisited[un]);
     getCommands(unvisited[un--]);
 }

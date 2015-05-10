@@ -117,7 +117,7 @@ int main(void)
     {
         for (int j = 0; j<17; j++)
         {
-            map[i][j] = 0;
+            map[i][j] = 0; 
         }
     }
     map[1][4] = 1;
@@ -127,9 +127,16 @@ int main(void)
     
     send_map(map);
     */
+    find_first();
     
-    
-    
+	while (un >= 0)
+	{	
+		update_sensors_and_empty_receive_buffer();
+		possible_directions = get_possible_directions();
+		make_decision();
+		update_map();
+		run_command();
+	}
     
     stop();
     

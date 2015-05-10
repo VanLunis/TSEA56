@@ -87,13 +87,11 @@ void shift_left()
 
 void init_map()
 {
-	robot.x = 8;
-	robot.y = 8;
     for (int i=0; i<MAP_SIZE; i++)
     {
         for (int j=0; j<MAP_SIZE; j++)
         {
-            driveable[i][j] = 1;
+            driveable[i][j] = 0;
             explored[i][j] = 0;
         }
     }
@@ -102,16 +100,16 @@ void init_map()
 void update_map()
 {
     //lx is x-coord for cell left or robot, ly is y-coord
-    int lx = robot.x-robot.ydir;
-    int ly = robot.y+robot.xdir;
+    int lx = abs(robot.ydir)*robot.x-robot.ydir;
+    int ly = abs(robot.xdir)*robot.y+robot.xdir;
 
     //analog to lx/ly for right cell
-    int rx = robot.x+robot.ydir;
-    int ry = robot.y-robot.xdir;
+    int rx = abs(robot.ydir)*robot.x+robot.ydir;
+    int ry = abs(robot.xdir)*robot.y-robot.xdir;
 
     //forward cell
-    int fx = robot.x+robot.ydir;
-    int fy = robot.y+robot.xdir;
+    int fx = abs(robot.xdir)*robot.x+robot.ydir;
+    int fy = abs(robot.ydir)*robot.y+robot.xdir;
 
     if (robotpos[1] == MAP_SIZE - 2)
     {
@@ -134,20 +132,19 @@ void update_map()
     }
     robot.x+=robot.xdir;
     robot.y+=robot.ydir;
-	
-	if (robot.lwall){
-		driveable[lx][ly] = 0;
-	}
-	if (robot.fwall){
-		driveable[fx][fy] = 0;
-	}
-	if (robot.rwall){
-		driveable[rx][ry] = 0;
-	}
-	explored[lx][ly] = 1;
-	explored[fx][fy] = 1;
-	explored[rx][ry] = 1;
-	
+
+    if (robot.lwall){
+        driveable[lx][ly] = 0;
+    }
+    if (robot.fwall){
+        driveable[fx][fy] = 0;
+    }
+    if (robot.rwall){
+        driveable[rx][ry] = 0;
+    }
+    explored[lx][ly] = 1;
+    explored[fx][fy] = 1;
+    explored[rx][ry] = 1;
 
     /*
     if (robot.direction == 'n')

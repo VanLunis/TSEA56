@@ -20,4 +20,6 @@ unsigned char distance_back;
 unsigned char wheel_click;
 unsigned char goal_found;
 
+unsigned char driven_distance;
+
 #endif

@@ -37,4 +37,7 @@ void make_direction_decision();
 
 void run_command();
 
+//Finds the first decision-cell. 
+void find_first();
+
 #endif

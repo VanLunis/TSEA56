@@ -290,6 +290,7 @@ void turn_right_control_on_back_wall()
 
 void run_command()
 {
+	update_sensors_and_empty_receive_buffer();
 	unsigned char possible_directions = get_possible_directions();
 	add_to_buffer(&send_buffer, 0xF8, possible_directions);
 	// TODO: Implement the actual algorithm we want to use
@@ -297,25 +298,38 @@ void run_command()
 	if(command[c--] == 'b')// dead end
 	{
 		turn_back();
+		driven_distance = 0;
 	}
 	else if(command[c--] == 'r')// right turn 90 degrees //OBS: added 4 to test
 	{
 		turn_right();
+		driven_distance = 0;
 	}
 	else if(command[c--] == 'l')
 	{
 		turn_left();
+		driven_distance = 0;
 	}
-	else if(command[c - 1] == 'f' && command[c] == 'f')
+	else if (command[c - 1] == 'f' && command[c] == 'f')
 	{	
 		int driven_distance = 0;
-		while(driven_distance < 40){
+		while(distance_front > FRONT_MAX_DISTANCE){
+			update_sensors_and_empty_receive_buffer();
 			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
 			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
 		            
 			// update driven_distance:
 			driven_distance = update_driven_distance(driven_distance, wheel_click, wheel_click_prior);
 			wheel_click_prior = wheel_click;
+			if (driven_distance > 40)
+			{
+				update_map();
+				driven_distance = driven_distance % 40;
+			}
+		}
+		if (driven_distance > 20)
+		{
+			update_map();
 		}
 		robot.distance = driven_distance;
 		c--;
@@ -325,4 +339,22 @@ void run_command()
 		turn_forward();	
 	}
 	
+}
+
+void find_first()
+{
+
+	update_sensors_and_empty_receive_buffer();
+	
+	while (distance_front > FRONT_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
+	{
+		update_sensors_and_empty_receive_buffer();
+		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+		
+		// update driven_distance:
+		driven_distance = update_driven_distance(driven_distance, wheel_click, wheel_click_prior);
+		wheel_click_prior = wheel_click;
+		robot.distance = driven_distance;	
+	}
 }

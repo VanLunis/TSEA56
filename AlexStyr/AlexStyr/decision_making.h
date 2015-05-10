@@ -10,6 +10,7 @@
 
 point unvisited[50];
 int un;
+int possible_directions;
 
 void make_decision();
 

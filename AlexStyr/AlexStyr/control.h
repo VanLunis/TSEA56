@@ -21,7 +21,6 @@ double e_prior;
 double alpha_prior;
 double e_prior_prior;
 double alpha_prior_prior;
-unsigned char driven_distance;
 unsigned char wheel_click_prior;
 
 void go_forward(double * ptr_e, double * ptr_e_prior, double * ptr_e_prior_prior, double* ptr_alpha, double* ptr_alpha_prior, double* ptr_alpha_prior_prior );
