@@ -19,6 +19,7 @@
 #include "decision_making.h"
 #include "motor.h"
 #include "steering.h"
+#include "test.h"
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -127,7 +128,9 @@ int main(void)
     
     send_map(map);
     */
-    find_first();
+    /*
+	find_first();
+	un = 0;
     
 	while (un >= 0)
 	{	
@@ -138,8 +141,8 @@ int main(void)
 		run_command();
 	}
     
-    stop();
-    
+    //stop();
+    */
     for(;;)
     {
         update_sensors_and_empty_receive_buffer();

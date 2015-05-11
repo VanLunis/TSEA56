@@ -1,7 +1,5 @@
 #include "decision_making.h"
 
-#include "map.h"
-#include "shortest_path.h"
 
 int u = 0;
 

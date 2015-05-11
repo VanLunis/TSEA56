@@ -7,6 +7,10 @@
 
 #include "map.h"
 #include "shortest_path.h"
+#include "steering.h"
+#include "action.h"
+#include "map.h"
+#include "shortest_path.h"
 
 point unvisited[50];
 int un;

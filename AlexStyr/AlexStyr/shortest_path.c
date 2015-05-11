@@ -4,9 +4,9 @@
 int c = 0;
 
 void getCommands(point end){
-	int direction;
+	int direction = 0;
 	
-	if (robot.xdir = 0 && robot.ydir == 1)
+	if (robot.xdir == 0 && robot.ydir == 1)
 	{
 		direction = 0;
 	}
@@ -140,7 +140,7 @@ void traceBack(int costmap[17][17], point end)
 {
     //Distance is equal to cost
     int cost = costmap[end.x][end.y];
-    printf("COST for end: %i", cost);
+    //printf("COST for end: %i", cost);
     //point path[cost];
     point p = end;
     path[cost] = p;
@@ -199,7 +199,7 @@ void floodfill(point start, point end)
             costmap[i][j] = 255;
         }
     }
-    printf(" (%i, %i), (%i, %i)", start.x, start.y, end.x, end.y);
+    //printf(" (%i, %i), (%i, %i)", start.x, start.y, end.x, end.y);
     int notfinished = 1;
     point c = start;
     int q = 0;
@@ -269,7 +269,7 @@ void floodfill(point start, point end)
             temp.y = p.y;
 
             //WEST
-            printf("C: x:%i, y:%i", c.x, c.y);
+            //printf("C: x:%i, y:%i", c.x, c.y);
             if (p.x > 0){
                 if ((driveable[p.x-1][p.y] == 1)
                         && (explored[p.x-1][p.y] == 1)

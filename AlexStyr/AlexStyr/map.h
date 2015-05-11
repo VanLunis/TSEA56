@@ -1,6 +1,8 @@
 #ifndef MAP_H_INCLUDED
 #define MAP_H_INCLUDED
 #define MAP_SIZE 17
+#include <stdlib.h>
+
 
 typedef struct robo{
     int x;

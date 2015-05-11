@@ -4,6 +4,8 @@
 #include "buffer.h"
 #include "bitman.h"
 #include "styr_defs.h"
+#include "steering.h"
+#include <math.h>
 #include <avr/io.h>
 
 struct data_buffer receive_buffer;

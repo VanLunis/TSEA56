@@ -1,6 +1,7 @@
 #ifndef STEERING_H
 #define STEERING_H
 
+#include "control.h"
 // Define speeds
 #define FULL_SPEED 60
 #define SLOW_SPEED 40

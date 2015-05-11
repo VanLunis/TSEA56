@@ -1,5 +1,7 @@
 #include "action.h"
 #include "control.h"
+#include "steering.h"
+#include <stdlib.h>
 
 // DIRECTION FUNCTIONS: -----------------------------------------
 // Turn forward:
@@ -307,6 +309,7 @@ void run_command()
 	update_sensors_and_empty_receive_buffer();
 	unsigned char possible_directions = get_possible_directions();
 	add_to_buffer(&send_buffer, 0xF8, possible_directions);
+	add_to_buffer(&send_buffer, 0xEE, command[c]);
 	// TODO: Implement the actual algorithm we want to use
 		
 	if(command[c--] == 'b')// dead end

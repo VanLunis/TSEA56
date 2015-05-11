@@ -8,7 +8,7 @@ typedef struct point
     int y;
 } point;
 
-int command[50];
+unsigned char command[50];
 int c;
 point end;
 point path[50];

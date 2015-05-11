@@ -36,7 +36,6 @@ void shift_right(){
         driveable[0][j] = 0;
         explored[0][j] = 0;
     }
-    printf("Im leaving");
     start[0]++;
     goal[0]++;
     robotpos[0]++;
@@ -89,6 +88,8 @@ void init_map()
 {
 	robot.x = 8;
 	robot.y = 8;
+	robot.xdir = 0;
+	robot.ydir = 1;
     for (int i=0; i<MAP_SIZE; i++)
     {
         for (int j=0; j<MAP_SIZE; j++)
@@ -308,7 +309,7 @@ void update_map()
     }
     */
 }
-
+/*
 void print_driveable()
 {
     printf("Driveable: \n");
@@ -322,7 +323,8 @@ void print_driveable()
     }
 
 }
-
+*/
+/*
 void print_explored()
 {
     printf("Explored: \n");
@@ -335,8 +337,9 @@ void print_explored()
         printf("\n");
     }
 
-}
 
+*/
+/*
 void print_costmap()
 {
     printf("Costmap:\n");
@@ -355,4 +358,5 @@ void print_costmap()
     }
 
 }
+*/
 

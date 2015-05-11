@@ -1,6 +1,7 @@
 #include "control.h"
 #include "styr_defs.h"
 #include "styrcomm.h"
+#include "steering.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -100,8 +101,12 @@ double controller(double e, double alpha, double e_prior, double alpha_prior, do
 }
 void setMotor(double u, double alpha){
     
-    if ( u < NEGATIVE_LIMIT){sharp_right();}
-    else if ( u < SLIGHT_NEGATIVE_LIMIT){slight_right();}
+    if ( u < NEGATIVE_LIMIT){
+		sharp_right();
+		}
+    else if ( u < SLIGHT_NEGATIVE_LIMIT){
+		slight_right();
+		}
     else if ( u < SLIGHT_POSITIVE_LIMIT){
         if (alpha > 5)
         {
