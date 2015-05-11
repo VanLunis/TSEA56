@@ -718,6 +718,7 @@ void turn_back()
     {
         turn_back_control_on_both_walls();
     }
+	/*
 	//// OBS: ADDED, NOT TESTED /////////////////////////////
 	else if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && 
 	((distance_left_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE)||
@@ -742,7 +743,7 @@ void turn_back()
 		turn_back_control_on_back_wall();
 	}
 	
-	//// END ADDED, NOT TESTED //////////////////////////////
+	//// END ADDED, NOT TESTED //////////////////////////////*/
 }
 void turn_back_control_on_both_walls()
 {
