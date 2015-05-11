@@ -59,16 +59,19 @@ volatile int transmission_status = 0;
 volatile struct data_byte temp_data;
 volatile int counter = 0;
 
-// Distance variables (from sensors)
+// Distance to wall variables (from sensors)
 unsigned char distance_right_back = 0;
 unsigned char distance_right_front = 0;
 unsigned char distance_left_back = 0;
 unsigned char distance_left_front = 0;
 unsigned char distance_front = 0;
 unsigned char distance_back = 0;
+
+// Driven distance variables
 unsigned char driven_distance = 0;
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
+unsigned char in_turn = 0;
 
 // Initiates control variables
 double e = 0; // Position error
@@ -1234,74 +1237,67 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	unsigned char possible_directions = get_possible_directions();
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
     // TODO: Implement the actual algorithm we want to use
-     
+    
+	driven_distance = 0;
+	in_turn = 1; 
     if(possible_directions == 0x01)// dead end
     {
 		turn_back();
-		turn_forward();
     }	
     else if(possible_directions == 0x05 || possible_directions == 0x04)// right turn 90 degrees //OBS: added 4 to test
     {
 		turn_right();
-		turn_forward();
     }
     else if(possible_directions == 0x07 || possible_directions == 0x06)// closed left t-crossing //OBS: added 6 to test
     {
 		turn_right(); 
-		turn_forward();
     }
     else if(possible_directions == 0x09 || possible_directions == 0x08)// left turn 90 degrees //OBS: added 8 to test
     {
 		turn_left();
-		turn_forward();
     }
     else if(possible_directions == 0x0B || possible_directions == 0x0A)// closed right t-crossing //OBS: added A to test
     {
-		turn_forward();
+		;	
     }
     else if(possible_directions == 0x0D || possible_directions == 0x0C)// closed front t-crossing //OBS: added C to test
     {
 		turn_right();
-		turn_forward();
     }
     else if(possible_directions == 0x0F || possible_directions == 0x0E)// 4-way-crossing //OBS: added E to test
     {
 		turn_right();
-		turn_forward();	
     }
-    else
-    {
-		stop();
-		_delay_ms(50);
-		_delay_ms(50);
-		// Indicates that something went wrong
-		// TODO: Add functionality to correct position and continue
-    }
+	in_turn = 0;
+	turn_forward();
 }
 void update_driven_distance(){
-	if (wheel_click == 1 && wheel_click_prior == 0)
+	if (!in_turn)
 	{
-		driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-		add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
-		if (driven_distance >= 40)
+		if (wheel_click == 1 && wheel_click_prior == 0)
 		{
-			stop();
-			_delay_ms(1000);
-			driven_distance = driven_distance % 40;
+			driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
+			add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
+			if (driven_distance >= 40)
+			{
+				stop();
+				_delay_ms(1000);
+				driven_distance = driven_distance % 40;
+			}
 		}
-	}
-	else if (wheel_click == 0 && wheel_click_prior == 1)
-	{
-		driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-		add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
-		if (driven_distance >= 40)
+		else if (wheel_click == 0 && wheel_click_prior == 1)
 		{
-			stop();
-			_delay_ms(1000);
-			driven_distance =  driven_distance % 40;
+			driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
+			add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
+			if (driven_distance >= 40)
+			{
+				stop();
+				_delay_ms(1000);
+				driven_distance =  driven_distance % 40;
+			}
 		}
+		wheel_click_prior = wheel_click;
 	}
-	wheel_click_prior = wheel_click;
 }
 void mission_phase_1() //Explore the maze
 {
@@ -1317,6 +1313,7 @@ void mission_phase_1() //Explore the maze
 	// In some kind of turn or crossing:
 	else // front < 13
 	{
+		driven_distance = 0;
 		// Stop, check directions and decide which way to go:
 		make_direction_decision();
 	}
@@ -1325,6 +1322,7 @@ void mission_phase_1() //Explore the maze
 	(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
 	(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 	{
+		driven_distance = 0;
 		make_direction_decision();
 	}
 	
