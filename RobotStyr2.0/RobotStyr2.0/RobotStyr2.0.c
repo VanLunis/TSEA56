@@ -3,7 +3,7 @@
  *
  * Created: 11/5 - 2015
  *
- * Try to merge new functionality (i.e. map), step by step into working contol code
+ * Try to merge new functionality (i.e. map), step by step into working control code
  *
  */
 
@@ -72,6 +72,7 @@ unsigned char driven_distance = 0;
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
 unsigned char in_turn = 0;
+unsigned char square_counter = 0;
 
 // Initiates control variables
 double e = 0; // Position error
@@ -407,7 +408,6 @@ void update_sensors_and_empty_receive_buffer()
     }
 }
 
-
 // In remote control mode: use remote control values from receive buffer
 void remote_control(char control_val){
     
@@ -713,8 +713,8 @@ void turn_forward()
 // Turn back:
 void turn_back()
 {
-    if(distance_front < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE 
-	&& distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)// OBS added distance_front, not tested
+    if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE 
+	&& distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
     {
         turn_back_control_on_both_walls();
     }
@@ -1050,7 +1050,7 @@ void turn_left_control_on_back_wall()
 	_delay_ms(50);
 	
 	rotate_left(60);
-	for (int i = 0; i<75; i++){ _delay_ms(1);}
+	for (int i = 0; i<45; i++){ _delay_ms(1);}
 	//  STOPP
 	stop();
 	_delay_ms(50);
@@ -1188,7 +1188,7 @@ void turn_right_control_on_back_wall()
     _delay_ms(50);
     
     rotate_right(60);
-    for (int i = 0; i<75; i++){ _delay_ms(1);}
+    for (int i = 0; i<45; i++){ _delay_ms(1);}
     //  STOPP
     stop();
     _delay_ms(50);
@@ -1230,15 +1230,23 @@ unsigned char get_possible_directions()
         // open to left:
         possible_directions |= 0x08;
     }
+	if (possible_directions == 0x00)
+	{
+		possible_directions = 0xFF;
+	}
     return possible_directions;
 }
 void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
 {
 	unsigned char possible_directions = get_possible_directions();
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
+	if (driven_distance > 20)
+	{
+		square_counter++;
+	}
+	add_to_buffer(&send_buffer, 0xF6, square_counter);
+	square_counter = 0;
     // TODO: Implement the actual algorithm we want to use
-    
-	driven_distance = 0;
 	in_turn = 1; 
     if(possible_directions == 0x01)// dead end
     {
@@ -1269,6 +1277,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 		turn_right();
     }
 	in_turn = 0;
+	driven_distance = 0;
 	turn_forward();
 }
 void update_driven_distance(){
@@ -1283,6 +1292,7 @@ void update_driven_distance(){
 				stop();
 				_delay_ms(1000);
 				driven_distance = driven_distance % 40;
+				square_counter++;
 			}
 		}
 		else if (wheel_click == 0 && wheel_click_prior == 1)
@@ -1293,7 +1303,8 @@ void update_driven_distance(){
 			{
 				stop();
 				_delay_ms(1000);
-				driven_distance =  driven_distance % 40;
+				driven_distance = driven_distance % 40;
+				square_counter++;
 			}
 		}
 		wheel_click_prior = wheel_click;

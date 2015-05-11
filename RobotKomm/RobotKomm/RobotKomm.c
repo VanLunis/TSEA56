@@ -67,8 +67,10 @@ int main(void)
         
         if(!buffer_empty(&pc_buffer_from_sensor))
         {
-            USART_Transmit(0x00));
+            USART_Transmit(0x00);
+			_delay_us(34);
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
+			_delay_us(34);
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
             discard_from_buffer(&pc_buffer_from_sensor);
         }
@@ -77,8 +79,10 @@ int main(void)
         
         if(!buffer_empty(&pc_buffer_from_control))
         {
-            USART_Transmit(0x00));
+            USART_Transmit(0x00);
+			_delay_us(34);
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).type);
+			_delay_us(34);
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
             discard_from_buffer(&pc_buffer_from_control);
         }
