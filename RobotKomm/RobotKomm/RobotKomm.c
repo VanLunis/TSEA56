@@ -67,18 +67,9 @@ int main(void)
         
         if(!buffer_empty(&pc_buffer_from_sensor))
         {
-            
+            USART_Transmit(0x00));
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
-            
-            if (fetch_from_buffer(&pc_buffer_from_sensor).val > 220)
-            {
-                USART_Transmit(220);
-            }
-            else
-            {
-                USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
-            }
-            
+            USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
             discard_from_buffer(&pc_buffer_from_sensor);
         }
         
@@ -86,18 +77,9 @@ int main(void)
         
         if(!buffer_empty(&pc_buffer_from_control))
         {
-            
+            USART_Transmit(0x00));
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).type);
-            
-            if (fetch_from_buffer(&pc_buffer_from_control).val > 220)
-            {
-                USART_Transmit(220);
-            }
-            else
-            {
-                USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
-            }
-            
+            USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
             discard_from_buffer(&pc_buffer_from_control);
         }
         //_delay_us(delay_time);
