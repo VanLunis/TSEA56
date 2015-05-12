@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "RobotStyr2.0test", "RobotStyr2.0test\RobotStyr2.0test.cproj", "{F3F5A71C-F2EC-4F3D-A29E-E27B25FD8C4C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F3F5A71C-F2EC-4F3D-A29E-E27B25FD8C4C}.Debug|AVR.ActiveCfg = Debug|AVR
+		{F3F5A71C-F2EC-4F3D-A29E-E27B25FD8C4C}.Debug|AVR.Build.0 = Debug|AVR
+		{F3F5A71C-F2EC-4F3D-A29E-E27B25FD8C4C}.Release|AVR.ActiveCfg = Release|AVR
+		{F3F5A71C-F2EC-4F3D-A29E-E27B25FD8C4C}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
