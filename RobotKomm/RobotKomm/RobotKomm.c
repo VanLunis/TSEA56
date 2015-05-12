@@ -22,6 +22,9 @@ volatile int transmission_status = 0; // 0 to send .type, 1 to send .val, 2 when
 volatile int counter = 0;
 volatile struct data_byte temp_data;
 
+// SWITCH:
+volatile int autonomous_mode = 1; // 1 true, 0 false: remote control mode
+
 struct data_buffer sensor_buffer;
 struct data_buffer control_buffer;
 struct data_buffer pc_buffer_from_sensor;
@@ -48,21 +51,20 @@ void USART_to_SPI(void);
 
 int main(void)
 {
-    DDRA = 0xff;
-    PORTA = 0xff;
     init_master();
     sei();
     
     while(1) //(;;)
     {
-        
-        receive_from_sensor();
-        
-        // TODO add receive from control
-        
+        if (autonomous_mode == 1)
+        {
+			receive_from_sensor();
+        }
+		
         if(!buffer_empty(&control_buffer))
         {
-            send_to_control();
+            _delay_us(34);
+			send_to_control();
         }
         
         if(!buffer_empty(&pc_buffer_from_sensor))
@@ -123,7 +125,7 @@ ISR(SPI_STC_vect)
 
 ISR(USART0_RX_vect)
 {
-    unsigned char fire_fly_char;
+	unsigned char fire_fly_char;
     fire_fly_char = USART_Receive();
     if((fire_fly_char & 0xf0) == 0x40)
     {
@@ -168,11 +170,6 @@ void init_master(void)
     UCSR0B = (1<<RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
     /* Set frame format: 8data, 1stop bit */
     UCSR0C = (0<<USBS0)|(3<<UCSZ00);
-    
-    ///////////////////////// TEST TEST TEST /////////////////////////
-    DDRA = 0xFF;
-    //////////////////////////////////////////////////////////////////
-    
 };
 
 ///////////////// COMMUNICATION SPI FUNCTIONS //////////////////////
@@ -222,9 +219,7 @@ void send(struct data_buffer* my_buffer, int slave)
             {
                 discard_from_buffer(my_buffer); // Discard byte from buffer when full transmission succeeded
                 PORTB = (1<<PORTB4)|(1<<PORTB3)|(0<<PORTB0); // Pulling SS2 and SS1 high
-                transmission_status = 0;
-                counter++;
-                PORTA = counter;
+                transmission_status = 0;        
                 break;
             }
         }

@@ -38,8 +38,8 @@
 #define SLIGHT_POSITIVE_LIMIT 1
 #define POSITIVE_LIMIT 5
 
-#define AUTONOMOUS_MODE 1
-#define REMOTE_CONTROL_MODE 0
+//#define AUTONOMOUS_MODE 1
+//#define REMOTE_CONTROL_MODE 0
 
 // PD-control constants
 #define DELTA_T 1
@@ -83,6 +83,9 @@ double alpha_prior = 0;
 double e_prior_prior = 0;
 double alpha_prior_prior = 0;
 
+// SWITCH:
+volatile int autonomous_mode = 1; // 1 true, 0 false: remote control mode
+
 // FUNCTION DECLARATIONS: ////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
 void init_control_module(void);
@@ -98,6 +101,7 @@ void update_sensors_and_empty_receive_buffer();
 
 // In remote control mode: use remote control values from receive buffer
 void remote_control(char control_val);
+void remote_control_mode();
 
 // MOTOR FUNCTIONS: ----------------------------------------------
 void set_speed_right_wheels(unsigned char new_speed_percentage);
@@ -157,7 +161,7 @@ void make_direction_decision();
 void update_driven_distance();
 
 // MISSION FUNCTIONS: --------------------------------------------
-void mission_phase_1(); // Explore tha maze
+void mission_phase_1(); // Explore the maze
 
 // GRIPPING ARM FUNCTIONS: ---------------------------------------
 // Functions for the arm:
@@ -206,31 +210,32 @@ void move_arm();
 int main(void)
 {
     init_control_module();
-    sei();
+	sei();
+	
     // To make the robot stand still when turned on:
-    while(distance_front < FRONT_MAX_DISTANCE)
+	
+    if (autonomous_mode == 1)
     {
-        update_values_from_sensor();
+		while(distance_front < FRONT_MAX_DISTANCE)
+		{
+			update_values_from_sensor();
+		}
+		
+		stop();
     }
-    
-    stop();
-    
+
     for(;;)
     {
-        mission_phase_1();
-        
-        /*
-         // In remote control mode?:
-         else{
-         if(!buffer_empty(&receive_buffer))
-         {
-         if(fetch_from_buffer(&receive_buffer).type == 0x01)
-         {
-         remote_control(fetch_from_buffer(&receive_buffer).val);
-         }
-         discard_from_buffer(&receive_buffer);
-         }
-         }*/
+		if (autonomous_mode == 1)
+		{
+			mission_phase_1();
+		}
+
+        // In remote control mode?:
+        else
+		{
+		remote_control_mode();
+        }
     }
     
 }
@@ -437,6 +442,17 @@ void remote_control(char control_val){
             break;
     }
     
+}
+void remote_control_mode()// SWITCH
+{
+	if(!buffer_empty(&receive_buffer))
+	{
+		if(fetch_from_buffer(&receive_buffer).type == 0x01)
+		{
+			remote_control(fetch_from_buffer(&receive_buffer).val);
+		}
+		discard_from_buffer(&receive_buffer);
+	}
 }
 
 // MOTOR FUNCTIONS: ----------------------------------------------
