@@ -37,6 +37,7 @@ SUBDIRS :=
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
+../map.c \
 ../RobotStyr2.0.c
 
 
@@ -47,15 +48,19 @@ ASM_SRCS +=
 
 
 OBJS +=  \
+map.o \
 RobotStyr2.0.o
 
 OBJS_AS_ARGS +=  \
+map.o \
 RobotStyr2.0.o
 
 C_DEPS +=  \
+map.d \
 RobotStyr2.0.d
 
 C_DEPS_AS_ARGS +=  \
+map.d \
 RobotStyr2.0.d
 
 OUTPUT_FILE_PATH +=RobotStyr2.0.elf
@@ -72,6 +77,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 
