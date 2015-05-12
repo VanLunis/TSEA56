@@ -56,17 +56,18 @@ int main(void)
     
     while(1) //(;;)
     {
-        if (autonomous_mode == 1)
-        {
-			receive_from_sensor();
-        }
-		
-        if(!buffer_empty(&control_buffer))
-        {
-            _delay_us(34);
-			send_to_control();
-        }
         
+		if (autonomous_mode == 1)
+		{
+			receive_from_sensor();
+		}
+			
+		if(!buffer_empty(&control_buffer))
+		{
+			send_to_control();
+		}
+		
+		
         if(!buffer_empty(&pc_buffer_from_sensor))
         {
             /*

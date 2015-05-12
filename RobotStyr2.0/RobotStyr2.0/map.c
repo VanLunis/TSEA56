@@ -1,10 +1,10 @@
 #include "map.h"
 
 // MAP variables
-int x = 0;
-int y = 0;
-int xdir = 0;
-int ydir = 1;
+int8_t x = 0;
+int8_t y = 0;
+int8_t xdir = 0;
+int8_t ydir = 1;
 
 
 //Shifts the elements up. (Keep in mind that lower left corner is the origin)

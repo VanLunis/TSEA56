@@ -69,7 +69,8 @@ unsigned char distance_front = 0;
 unsigned char distance_back = 0;
 
 // Driven distance variables
-unsigned char driven_distance = 0;
+unsigned char driven_distance = 5; //drives too far when turned on
+unsigned char test_total_driven_distance = 0; // TEST TEST
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
 unsigned char in_turn = 0;
@@ -587,9 +588,9 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, *ptr_alpha, *ptr_e_prior, *ptr_alpha_prior, *ptr_e_prior_prior,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        add_to_buffer(&send_buffer,0xF2,u);
-        add_to_buffer(&send_buffer,0xF1,(char) *ptr_alpha);
-        add_to_buffer(&send_buffer,0xF0,(char) *ptr_e);
+        //add_to_buffer(&send_buffer,0xF2,u);
+        //add_to_buffer(&send_buffer,0xF1,(char) *ptr_alpha);
+        //add_to_buffer(&send_buffer,0xF0,(char) *ptr_e);
         
         // updates values for PD:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -604,8 +605,8 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(0, *ptr_alpha, 0, *ptr_alpha_prior, 0,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        add_to_buffer(&send_buffer,0xF2,u);
-        add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
+        //add_to_buffer(&send_buffer,0xF2,u);
+        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -621,8 +622,8 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        add_to_buffer(&send_buffer,0xF2,u);
-        add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
+        //add_to_buffer(&send_buffer,0xF2,u);
+        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -638,8 +639,8 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        add_to_buffer(&send_buffer,0xF2,u);
-        add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
+        //add_to_buffer(&send_buffer,0xF2,u);
+        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -1119,27 +1120,16 @@ unsigned char get_possible_directions()
 }
 void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
 {
-    if (driven_distance > 25)
+    if (driven_distance > 20)
     {
         square_counter++;
-		update_position();
+		update_position();// TEST TEST
     }
-	
-	///// TEST TEST TEST /////////
-	if (x == 8 && y == 10)
-	{
-		stop();
-		for (int i=0; i<20; i++)
-		{
-			_delay_ms(50);
-		}
-	}
-	///// END TEST ///////////////
-	
     unsigned char possible_directions = get_possible_directions();
-    add_to_buffer(&send_buffer, 0xF6,(char) square_counter);
+    //add_to_buffer(&send_buffer, 0xF6,(char) square_counter);
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
     driven_distance = 0;
+	test_total_driven_distance = 0;
     
     square_counter = 0;
     // TODO: Implement the actual algorithm we want to use
@@ -1174,7 +1164,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     }
     in_turn = 0;
     driven_distance = 0;
-	
+	test_total_driven_distance = 0;
 	
     turn_forward();
 	
@@ -1190,8 +1180,9 @@ void update_driven_distance(){
         if (wheel_click == 1 && wheel_click_prior == 0)
         {
             driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-            add_to_buffer(&send_buffer,0xEF, (char) driven_distance);
-            if (driven_distance >= 45)
+			test_total_driven_distance = test_total_driven_distance + WHEEL_CLICK_DISTANCE; // TEST TEST
+            add_to_buffer(&send_buffer,0xEF, (char) test_total_driven_distance); // TEST TEST
+            if (driven_distance >= 40)
             {
 				driven_distance = 0;
 				update_position();
@@ -1199,16 +1190,14 @@ void update_driven_distance(){
 				add_to_buffer(&send_buffer, 0xB2, (char) y);
 				add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
 				add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-                add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
-                
-                
+                //add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
             }
         }
         else if (wheel_click == 0 && wheel_click_prior == 1)
         {
-            driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-            add_to_buffer(&send_buffer,0xEF, (char) driven_distance);
-            if (driven_distance >= 45)
+            test_total_driven_distance = test_total_driven_distance + WHEEL_CLICK_DISTANCE; // TEST TEST
+            add_to_buffer(&send_buffer,0xEF, (char) test_total_driven_distance); // TEST TEST
+            if (driven_distance >= 40)
             {
 				driven_distance = 0;
 				update_position();
@@ -1216,7 +1205,7 @@ void update_driven_distance(){
 				add_to_buffer(&send_buffer, 0xB2, (char) y);
 				add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
 				add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-				add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
+				//add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
             }
         }
         wheel_click_prior = wheel_click;
@@ -1225,16 +1214,6 @@ void update_driven_distance(){
 void mission_phase_1() //Explore the maze
 {
     update_sensors_and_empty_receive_buffer();
-	///// TEST TEST TEST /////////
-    if (x == 8 && y == 10)
-    {
-		stop();
-		for (int i=0; i<20; i++)
-		{
-			_delay_ms(50);
-		}
-    }
-	///// END TEST ///////////////
 	
     // In a straight corridor?:
     if(distance_front > FRONT_MAX_DISTANCE) // front > 13
@@ -1245,17 +1224,15 @@ void mission_phase_1() //Explore the maze
     }
     // In some kind of turn or crossing:
     else // front < 13
-    {
-        driven_distance = 0;
-        // Stop, check directions and decide which way to go:
-        make_direction_decision();
+    {		
+        // Stop, check directions and decide which way to go:      
+	    make_direction_decision();
     }
     if (distance_front > 30 && distance_back > 30 &&
         ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
          (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
          (distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
     {
-        driven_distance = 0;
         make_direction_decision();
     }
     

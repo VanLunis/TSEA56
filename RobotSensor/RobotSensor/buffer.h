@@ -50,6 +50,45 @@ int buffer_empty(struct data_buffer* my_buffer)
 	return 0;
 };
 
+struct data_byte fetch_from_buffer(struct data_buffer* my_buffer)
+{
+	if(buffer_empty(my_buffer) == 0)
+	{
+		return my_buffer->contents[my_buffer->head];
+	}
+	return null_data_byte;
+};
+
+// Add garbage collector?
+void discard_from_buffer(struct data_buffer* my_buffer)
+{
+	if(buffer_empty(my_buffer)==0)
+	{
+		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
+		my_buffer->full_revolution = 0;
+	}
+};
+
+int amount_stored(struct data_buffer* my_buffer)
+{
+	if(my_buffer->head <= my_buffer->tail)
+	{
+		if(my_buffer->full_revolution==0)
+		{
+			return ((my_buffer->tail) - (my_buffer->head));
+		}
+		return BUFFER_SIZE;
+	}
+	
+	else
+	{
+		return(BUFFER_SIZE - my_buffer->head + my_buffer->tail);
+	}
+}
+
+
+
+
 void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 {
 	//We allow data to be put on our data-buffer if we have not yet traversed the entire buffer. (The buffer can be viewed as a circle).
@@ -69,42 +108,7 @@ void add_to_buffer(struct data_buffer* my_buffer, char new_type, char new_val)
 		
 };
 
-int amount_stored(struct data_buffer* my_buffer)
-{
-	if(my_buffer->head <= my_buffer->tail)
-	{
-		if(my_buffer->full_revolution==0)
-		{
-			return ((my_buffer->tail) - (my_buffer->head));
-		}
-		return BUFFER_SIZE;	
-	}
-	
-	else
-	{
-		return(BUFFER_SIZE - my_buffer->head + my_buffer->tail);
-	}
-}
 
-
-struct data_byte fetch_from_buffer(struct data_buffer* my_buffer)
-{
-	if(buffer_empty(my_buffer) == 0)
-	{
-		return my_buffer->contents[my_buffer->head];
-	}
-	return null_data_byte;
-};
-
-// Add garbage collector?
-void discard_from_buffer(struct data_buffer* my_buffer)
-{
-	if(buffer_empty(my_buffer)==0)
-	{
-		my_buffer->head = (my_buffer->head + 1) % BUFFER_SIZE;
-		my_buffer->full_revolution = 0;
-	}
-};
 
 
 #endif

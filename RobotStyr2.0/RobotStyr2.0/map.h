@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include <util/delay.h>
 
-int x;
-int y;
-int xdir;
-int ydir;
+int8_t x;
+int8_t y;
+int8_t xdir;
+int8_t ydir;
 
 
 //Origin is the upper left element.
