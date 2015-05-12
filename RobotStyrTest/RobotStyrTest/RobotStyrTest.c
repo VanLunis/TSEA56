@@ -37,8 +37,9 @@
 #define SLIGHT_POSITIVE_LIMIT 1
 #define POSITIVE_LIMIT 5
 
-#define AUTONOMOUS_MODE 1
-#define REMOTE_CONTROL_MODE 0
+// SWITCH
+//#define AUTONOMOUS_MODE 1
+//#define REMOTE_CONTROL_MODE 0
 
 // PD-control constants
 #define DELTA_T 1
@@ -67,6 +68,9 @@ unsigned char distance_front = 0;
 unsigned char distance_back = 0;
 unsigned char distance_driven = 0;
 
+// SWITCH:
+volatile int autonomous_mode = 0; // 1 true, 0 false: remote control mode
+
 // FUNCTION DECLARATIONS: ////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
 void init_control_module(void);
@@ -82,6 +86,7 @@ void update_sensors_and_empty_receive_buffer();
 
 // In remote control mode: use remote control values from receive buffer
 void remote_control(char control_val);
+void remote_control_mode();// SWITCH
 
 // MOTOR FUNCTIONS: ----------------------------------------------
 void set_speed_right_wheels(unsigned char new_speed_percentage);
@@ -205,41 +210,39 @@ int main(void)
     
     for(;;)
     {
-        update_sensors_and_empty_receive_buffer();
-        
-        // In a straight corridor?:
-        if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+        // SWITCH
+		if (autonomous_mode == 1)
         {
-            // Drive forward:
-            alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-            go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+			update_sensors_and_empty_receive_buffer();
+			
+			// In a straight corridor?:
+			if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+			{
+				// Drive forward:
+				alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+				go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+			}
+			// In some kind of turn or crossing:
+			else // front < 13
+			{
+				// Stop, check directions and decide which way to go:
+				make_direction_decision();
+			}
+			if (distance_front > 30 && distance_back > 30 &&
+			((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+			(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+			(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+			{
+				make_direction_decision();
+			}
+
+		}
+		// SWITCH
+        // In remote control mode?:
+        else
+		{
+			remote_control_mode();
         }
-        // In some kind of turn or crossing:
-        else // front < 13
-        {
-            // Stop, check directions and decide which way to go:
-            make_direction_decision();
-        }
-        if (distance_front > 30 && distance_back > 30 &&
-            ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-             (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-             (distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
-        {
-            make_direction_decision();
-        }
-        
-        /*
-         // In remote control mode?:
-         else{
-         if(!buffer_empty(&receive_buffer))
-         {
-         if(fetch_from_buffer(&receive_buffer).type == 0x01)
-         {
-         remote_control(fetch_from_buffer(&receive_buffer).val);
-         }
-         discard_from_buffer(&receive_buffer);
-         }
-         }*/
     }
     
 }
@@ -275,10 +278,25 @@ ISR(INT1_vect)
     SPDR = fetch_from_buffer(&send_buffer).type;
 }
 
+// SWITCH
+// Interrupt from switch
+ISR(PCINT0_vect)
+{
+	if(PINA & 0x01 = 0x01)
+	{
+		autonomous_mode = 1;
+	}
+	else
+	{
+		autonomous_mode = 0;
+	}
+}
+
 
 // FUNCTIONS: /////////////////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
 void init_control_module(void)
+
 {
     // SPI
     SPCR = (1<<SPIE)|(1<<SPE)|(0<<DORD)|(0<<MSTR)|(0<<CPOL)|(0<<CPHA);
@@ -290,6 +308,11 @@ void init_control_module(void)
     // Enable IRQ1 and IRQ0
     EIMSK = (1<<INT1)|(1<<INT0);
     
+	// SWITCH
+	// Enable pin change interrupt 0 (PCINTO)
+	PCICR = (1<<PCIE0);
+	PCMSK0 = (1<<PCINT0);
+	
     //Initiate the buffers.
     buffer_init(&receive_buffer);
     buffer_init(&send_buffer);
@@ -315,6 +338,15 @@ void init_control_module(void)
     // Initiate gear as 11: straight forward
     PORTC = (1<<PORTC1) | (1<<PORTC0);
     
+	// SWITCH
+	if(PINA & 0x01 == 0x01)
+	{
+		autonomous_mode = 1;
+	}
+	else
+	{
+		autonomous_mode = 0;
+	}
 };
 
 // COMMUNICATION FUNCTIONS: -----------------------------------
@@ -447,7 +479,17 @@ void remote_control(char control_val){
     }
     
 }
-
+void remote_control_mode()// SWITCH
+{
+	if(!buffer_empty(&receive_buffer))
+	{
+		if(fetch_from_buffer(&receive_buffer).type == 0x01)
+		{
+			remote_control(fetch_from_buffer(&receive_buffer).val);
+		}
+		discard_from_buffer(&receive_buffer);
+	}
+}
 // MOTOR FUNCTIONS: ----------------------------------------------
 void set_speed_right_wheels(unsigned char new_speed_percentage){
     if (new_speed_percentage <= 100 && new_speed_percentage >= 0 )
