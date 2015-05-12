@@ -67,11 +67,17 @@ int main(void)
         
         if(!buffer_empty(&pc_buffer_from_sensor))
         {
-            USART_Transmit(0x00);
-			_delay_us(34);
-            USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
-			_delay_us(34);
-            USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
+            /*
+             USART_Transmit(0x00);
+             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
+             if(fetch_from_buffer(&pc_buffer_from_sensor).val == 0x00)
+             {
+             USART_Transmit(0x01);
+             }
+             else
+             {
+             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
+             }*/
             discard_from_buffer(&pc_buffer_from_sensor);
         }
         
@@ -80,10 +86,15 @@ int main(void)
         if(!buffer_empty(&pc_buffer_from_control))
         {
             USART_Transmit(0x00);
-			_delay_us(34);
             USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).type);
-			_delay_us(34);
-            USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
+            if(fetch_from_buffer(&pc_buffer_from_control).val == 0x00)
+            {
+                USART_Transmit(0x01);
+            }
+            else
+            {
+                USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
+            }
             discard_from_buffer(&pc_buffer_from_control);
         }
         //_delay_us(delay_time);
@@ -346,10 +357,10 @@ unsigned char USART_Receive(void)
     if ( 1 << RXC0)
     { // check if there is data to be received
         /* Wait for data to be received */
-        while ( !(UCSR0A & (1<<RXC0)) )	;
+        while ( !(UCSR0A & (1<<RXC0)) )   ;
         
         /* Get and return received data */
-        return UDR0;	
+        return UDR0;
     }
     return 0x00;
 }
@@ -357,7 +368,7 @@ unsigned char USART_Receive(void)
 void USART_Transmit( unsigned char data )
 {
     /* Wait for empty USART to transmit */
-    while ( !( UCSR0A & (1<<UDRE0)) )	;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
     /* Put data into USART, sends the data */
     UDR0 = data;
 }

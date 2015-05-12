@@ -157,7 +157,7 @@ void make_direction_decision();
 void update_driven_distance();
 
 // MISSION FUNCTIONS: --------------------------------------------
-void mission_phase_1(); // Explore tha maze 
+void mission_phase_1(); // Explore tha maze
 
 // GRIPPING ARM FUNCTIONS: ---------------------------------------
 // Functions for the arm:
@@ -171,31 +171,31 @@ void move_arm();
 #define bit_clear(p,m) ((p) &= ~(m))
 #define bit_flip(p,m) ((p) ^= (m))
 #define bit_write(c,p,m) (c ? bit_set(p,m) : bit_clear(p,m))
-#define BIT(x)	(0x01 << (x))
+#define BIT(x)  (0x01 << (x))
 #define LONGBIT(x) ((unsigned long)0x00000001 << (x))
 
 
 /*
  To set a bit:
-	bit_set(foo, 0x01);
+ bit_set(foo, 0x01);
  To set bit number 5:
-	bit_set(foo, BIT(5));
+ bit_set(foo, BIT(5));
  To clear bit number 6 with a bit mask:
-	bit_clear(foo, 0x40);
+ bit_clear(foo, 0x40);
  To flip bit number 0:
-	bit_flip(foo, BIT(0));
+ bit_flip(foo, BIT(0));
  To check bit number 3:
-	if(bit_get(foo, BIT(3)))
-	{
-	}
+ if(bit_get(foo, BIT(3)))
+ {
+ }
  To set or clear a bit based on bit number 4:
  if(bit_get(foo, BIT(4)))
  {
-	bit_set(bar, BIT(0));
+ bit_set(bar, BIT(0));
  }
  else
  {
-	bit_clear(bar, BIT(0));
+ bit_clear(bar, BIT(0));
  }
  */
 
@@ -207,18 +207,18 @@ int main(void)
 {
     init_control_module();
     sei();
-	// To make the robot stand still when turned on:
+    // To make the robot stand still when turned on:
     while(distance_front < FRONT_MAX_DISTANCE)
     {
         update_values_from_sensor();
     }
-        
+    
     stop();
     
     for(;;)
     {
         mission_phase_1();
-		
+        
         /*
          // In remote control mode?:
          else{
@@ -235,6 +235,10 @@ int main(void)
     
 }
 
+//////////////////////////////////////////////////////////////////////
+//-------------------------  FUNCTIONS  ----------------------------//
+//////////////////////////////////////////////////////////////////////
+
 // INTERRUPT VECTORS: ////////////////////////////////////////////////
 ISR(SPI_STC_vect)
 {
@@ -250,14 +254,12 @@ ISR(SPI_STC_vect)
         send_to_master(&send_buffer);
     }
 }
-
 //Set slave to reading mode.
 ISR(INT0_vect)
 {
     transmission_status = 0;
     mode = 0;
 }
-
 //Set slave to sending mode.
 ISR(INT1_vect)
 {
@@ -267,7 +269,6 @@ ISR(INT1_vect)
 }
 
 
-// FUNCTIONS: /////////////////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
 void init_control_module(void)
 {
@@ -286,11 +287,11 @@ void init_control_module(void)
     buffer_init(&send_buffer);
     
     // PWM init
-    DDRD  = (1<<DDD6)|(1<<DDD7);		// sets OCR2A and OCR2B as outputs => needed?
+    DDRD  = (1<<DDD6)|(1<<DDD7);        // sets OCR2A and OCR2B as outputs => needed?
     OCR2A = 0;
     OCR2B = 0;
     
-    /*  TCCR2A: [COM2x1, COM2x0] = [1,0] =>	OCR2n clears on compare match
+    /*  TCCR2A: [COM2x1, COM2x0] = [1,0] =>  OCR2n clears on compare match
      [WGM22, WGM21, WGM20] = [0,1,1] => fast PWM
      
      TCCR2B: [CS22, CS21, CS20] = [0,1,1] => clk/8   */
@@ -389,7 +390,7 @@ void update_values_from_sensor(){
                 
             case 0xFA: // distance driven:
                 wheel_click = fetch_from_buffer(&receive_buffer).val;
-				update_driven_distance();
+                update_driven_distance();
                 break;
                 
             case 0xF9:  // tejp sensor floor:
@@ -458,7 +459,7 @@ void set_speed_left_wheels(unsigned char new_speed_percentage){
 void forward(){
     PORTC = (1<<PORTC1) | (1<<PORTC0);
     if (distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)
-    {	// some of the sensors are big => drive slow
+    {   // some of the sensors are big => drive slow
         set_speed_right_wheels(SLOW_SPEED);
         set_speed_left_wheels(SLOW_SPEED);
     }
@@ -576,7 +577,7 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
     
     // USE ONLY ONE SIDE TO CONTROL
     else if ( (distance_left_front < WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE ) || (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
-    {	// just use one side in the maze to control
+    {   // just use one side in the maze to control
         double u = controller(0, *ptr_alpha, 0, *ptr_alpha_prior, 0,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
@@ -713,37 +714,37 @@ void turn_forward()
 // Turn back:
 void turn_back()
 {
-    if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE 
-	&& distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
+    if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE
+       && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
     {
         turn_back_control_on_both_walls();
     }
-	/*
-	//// OBS: ADDED, NOT TESTED /////////////////////////////
-	else if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && 
-	((distance_left_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE)||
-	(((distance_left_back > 28)||(distance_left_front > 28))&&(distance_front < 15))))
-	{
-		turn_back_control_on_left_wall();
-	}
-	else if(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE &&
-	((distance_right_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE)||
-	(((distance_right_back > 28)||(distance_right_front > 28))&&(distance_front < 15))))
-	{
-		turn_back_control_on_right_wall();
-	}
-	else if(distance_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE 
-	&& distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
-	{
-		turn_back_control_on_zero_walls();
-	}
-	else if(distance_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE
-	&& distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
-	{
-		turn_back_control_on_back_wall();
-	}
-	
-	//// END ADDED, NOT TESTED //////////////////////////////*/
+    /*
+     //// OBS: ADDED, NOT TESTED /////////////////////////////
+     else if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE &&
+     ((distance_left_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE)||
+     (((distance_left_back > 28)||(distance_left_front > 28))&&(distance_front < 15))))
+     {
+     turn_back_control_on_left_wall();
+     }
+     else if(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE &&
+     ((distance_right_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE)||
+     (((distance_right_back > 28)||(distance_right_front > 28))&&(distance_front < 15))))
+     {
+     turn_back_control_on_right_wall();
+     }
+     else if(distance_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE
+     && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+     {
+     turn_back_control_on_zero_walls();
+     }
+     else if(distance_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE
+     && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+     {
+     turn_back_control_on_back_wall();
+     }
+     
+     //// END ADDED, NOT TESTED //////////////////////////////*/
 }
 void turn_back_control_on_both_walls()
 {
@@ -795,123 +796,123 @@ void turn_back_control_on_both_walls()
 //// OBS: ADDED, NOT TESTED /////////////////////////////
 void turn_back_control_on_left_wall()
 {
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	// Rotate right:
-	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && 
-	distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
-	{
-		rotate_left(60);
-		update_sensors_and_empty_receive_buffer();
-	}
-	
-	// Need to align? //
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	update_sensors_and_empty_receive_buffer();
-	
-	while(!(distance_front > 30 && abs(distance_left_back - distance_left_front) < 1.2 && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
-	{
-		if (distance_front < FRONT_MAX_DISTANCE || distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE)
-		{
-			if (distance_left_back > distance_left_front)
-			{
-				while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_right(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			else
-			{
-				while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_left(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-		}
-		else if(distance_left_back > distance_left_front)
-		{
-			rotate_right(40);
-		}
-		else
-		{
-			rotate_left(40);
-		}
-		update_sensors_and_empty_receive_buffer();
-	}
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);	
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    // Rotate right:
+    while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT &&
+            distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
+    {
+        rotate_left(60);
+        update_sensors_and_empty_receive_buffer();
+    }
+    
+    // Need to align? //
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    update_sensors_and_empty_receive_buffer();
+    
+    while(!(distance_front > 30 && abs(distance_left_back - distance_left_front) < 1.2 && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
+    {
+        if (distance_front < FRONT_MAX_DISTANCE || distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE)
+        {
+            if (distance_left_back > distance_left_front)
+            {
+                while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+                {
+                    rotate_right(60);
+                    update_sensors_and_empty_receive_buffer();
+                }
+            }
+            else
+            {
+                while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
+                {
+                    rotate_left(60);
+                    update_sensors_and_empty_receive_buffer();
+                }
+            }
+        }
+        else if(distance_left_back > distance_left_front)
+        {
+            rotate_right(40);
+        }
+        else
+        {
+            rotate_left(40);
+        }
+        update_sensors_and_empty_receive_buffer();
+    }
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
 }
 void turn_back_control_on_right_wall()
 {
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && 
-	distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
-	{
-		rotate_right(60);
-		update_sensors_and_empty_receive_buffer();
-	}
-	
-	// Need to align? //
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	update_sensors_and_empty_receive_buffer();
-	
-	while (!(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
-	{
-		if (distance_front < FRONT_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)
-		{
-			if(distance_right_front > distance_right_back)
-			{
-				while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_right(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			else
-			{
-				while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_left(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			
-		}
-		else if(distance_right_front > distance_right_back)
-		{
-			rotate_right(40);
-		}
-		else
-		{
-			rotate_left(40);
-		}
-		update_sensors_and_empty_receive_buffer();
-	}
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT &&
+             distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
+    {
+        rotate_right(60);
+        update_sensors_and_empty_receive_buffer();
+    }
+    
+    // Need to align? //
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    update_sensors_and_empty_receive_buffer();
+    
+    while (!(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
+    {
+        if (distance_front < FRONT_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)
+        {
+            if(distance_right_front > distance_right_back)
+            {
+                while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
+                {
+                    rotate_right(60);
+                    update_sensors_and_empty_receive_buffer();
+                }
+            }
+            else
+            {
+                while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
+                {
+                    rotate_left(60);
+                    update_sensors_and_empty_receive_buffer();
+                }
+            }
+            
+        }
+        else if(distance_right_front > distance_right_back)
+        {
+            rotate_right(40);
+        }
+        else
+        {
+            rotate_left(40);
+        }
+        update_sensors_and_empty_receive_buffer();
+    }
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
 }
 void turn_back_control_on_zero_walls()
 {
-	turn_right_control_on_zero_walls();
-	turn_right_control_on_zero_walls();
+    turn_right_control_on_zero_walls();
+    turn_right_control_on_zero_walls();
 }
 void turn_back_control_on_back_wall()
 {
-	turn_right_control_on_left_wall();
-	turn_right_control_on_back_wall();
+    turn_right_control_on_left_wall();
+    turn_right_control_on_back_wall();
 }
 //// END ADDED, NOT TESTED //////////////////////////////
 
@@ -922,18 +923,18 @@ void turn_left()
     {
         turn_left_control_on_right_wall();
     }
-	//// OBS: ADDED, NOT TESTED /////////////////////////////
-	 else if(distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
-	 {
-		 turn_left_control_on_zero_walls();
-	 }
-	 else if(((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||(distance_left_back > 28)||(distance_left_front > 28))
-	 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
-	 {
-		 turn_left_control_on_back_wall();
-	 }
-
-	//// END ADDED, NOT TESTED //////////////////////////////
+    //// OBS: ADDED, NOT TESTED /////////////////////////////
+    else if(distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    {
+        turn_left_control_on_zero_walls();
+    }
+    else if(((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||(distance_left_back > 28)||(distance_left_front > 28))
+            && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    {
+        turn_left_control_on_back_wall();
+    }
+    
+    //// END ADDED, NOT TESTED //////////////////////////////
 }
 void turn_left_control_on_right_wall()
 {
@@ -993,69 +994,69 @@ void turn_left_control_on_right_wall()
 //// OBS: ADDED, NOT TESTED /////////////////////////////
 void turn_left_control_on_zero_walls()
 {
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	// short hard-coded rotate:
-	rotate_left(60);
-	for (int i = 0; i<380; i++){ _delay_ms(1);}
-	
-	//  STOPP
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
-	{
-		rotate_left(60);
-		update_sensors_and_empty_receive_buffer();
-	}
-	
-	//  STOPP
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	rotate_left(60);
-	for (int i = 0; i<180; i++){ _delay_ms(1);}
-	//  STOPP
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    // short hard-coded rotate:
+    rotate_left(60);
+    for (int i = 0; i<380; i++){ _delay_ms(1);}
+    
+    //  STOPP
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
+    {
+        rotate_left(60);
+        update_sensors_and_empty_receive_buffer();
+    }
+    
+    //  STOPP
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    rotate_left(60);
+    for (int i = 0; i<180; i++){ _delay_ms(1);}
+    //  STOPP
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
 }
 void turn_left_control_on_back_wall()
 {
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	// short hard-coded rotate:
-	rotate_left(60);
-	for (int i = 0; i<400; i++){ _delay_ms(1);}
-	
-	//  STOPP
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
-	{
-		rotate_left(60);
-		update_sensors_and_empty_receive_buffer();
-	}
-	
-	//  STOPP
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	
-	rotate_left(60);
-	for (int i = 0; i<45; i++){ _delay_ms(1);}
-	//  STOPP
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    // short hard-coded rotate:
+    rotate_left(60);
+    for (int i = 0; i<400; i++){ _delay_ms(1);}
+    
+    //  STOPP
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
+    {
+        rotate_left(60);
+        update_sensors_and_empty_receive_buffer();
+    }
+    
+    //  STOPP
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
+    
+    rotate_left(60);
+    for (int i = 0; i<45; i++){ _delay_ms(1);}
+    //  STOPP
+    stop();
+    _delay_ms(50);
+    _delay_ms(50);
 }
 //// END ADDED, NOT TESTED //////////////////////////////
 
@@ -1198,13 +1199,13 @@ void turn_right_control_on_back_wall()
 
 // MAZE FUNCTIONS: -----------------------------------------------
 unsigned char get_possible_directions()
-{	
+{
     //TODO: Check in all crossings/turns if this really shows correct values
     
-    unsigned char possible_directions = 0x00; 
+    unsigned char possible_directions = 0x00;
     /*
      
-     LRFB	
+     LRFB
      possible_direction:
      (-----|--1-) => forward open
      (-----|-1--) => right open
@@ -1218,7 +1219,7 @@ unsigned char get_possible_directions()
     }
     if (distance_front > 25)
     {
-        // open forward 
+        // open forward
         possible_directions |= 0x02;
     }
     if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||((distance_right_front > 28 || distance_right_back > 28) && distance_front < 15))//added distance_right_back to test
@@ -1231,111 +1232,117 @@ unsigned char get_possible_directions()
         // open to left:
         possible_directions |= 0x08;
     }
-	if (possible_directions == 0x00)
-	{
-		possible_directions = 0xFF;
-	}
+    if (possible_directions == 0x00)
+    {
+        possible_directions = 0x01;
+    }
     return possible_directions;
 }
 void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
 {
-	unsigned char possible_directions = get_possible_directions();
+    if (driven_distance > 20)
+    {
+        square_counter++;
+    }
+    unsigned char possible_directions = get_possible_directions();
+    add_to_buffer(&send_buffer, 0xF6, square_counter);
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
-	if (driven_distance > 20)
-	{
-		square_counter++;
-	}
-	add_to_buffer(&send_buffer, 0xF6, square_counter);
-	square_counter = 0;
+    
+    
+    square_counter = 0;
     // TODO: Implement the actual algorithm we want to use
-	in_turn = 1; 
+    in_turn = 1;
     if(possible_directions == 0x01)// dead end
     {
-		turn_back();
-    }	
+        turn_back();
+    }
     else if(possible_directions == 0x05 || possible_directions == 0x04)// right turn 90 degrees //OBS: added 4 to test
     {
-		turn_right();
+        turn_right();
     }
     else if(possible_directions == 0x07 || possible_directions == 0x06)// closed left t-crossing //OBS: added 6 to test
     {
-		turn_right(); 
+        turn_right();
     }
     else if(possible_directions == 0x09 || possible_directions == 0x08)// left turn 90 degrees //OBS: added 8 to test
     {
-		turn_left();
+        turn_left();
     }
     else if(possible_directions == 0x0B || possible_directions == 0x0A)// closed right t-crossing //OBS: added A to test
     {
-		;	
+        ;
     }
     else if(possible_directions == 0x0D || possible_directions == 0x0C)// closed front t-crossing //OBS: added C to test
     {
-		turn_right();
+        turn_right();
     }
     else if(possible_directions == 0x0F || possible_directions == 0x0E)// 4-way-crossing //OBS: added E to test
     {
-		turn_right();
+        turn_right();
     }
-	in_turn = 0;
-	driven_distance = 0;
-	turn_forward();
+    in_turn = 0;
+    driven_distance = 0;
+    turn_forward();
 }
 void update_driven_distance(){
-	if (!in_turn)
-	{
-		if (wheel_click == 1 && wheel_click_prior == 0)
-		{
-			driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-			add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
-			if (driven_distance >= 40)
-			{
-				stop();
-				_delay_ms(1000);
-				driven_distance = driven_distance % 40;
-				square_counter++;
-			}
-		}
-		else if (wheel_click == 0 && wheel_click_prior == 1)
-		{
-			driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-			add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
-			if (driven_distance >= 40)
-			{
-				stop();
-				_delay_ms(1000);
-				driven_distance = driven_distance % 40;
-				square_counter++;
-			}
-		}
-		wheel_click_prior = wheel_click;
-	}
+    if (!in_turn)
+    {
+        if (wheel_click == 1 && wheel_click_prior == 0)
+        {
+            driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
+            add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
+            if (driven_distance >= 40)
+            {
+                stop();
+                _delay_ms(1000);
+                driven_distance = driven_distance % 40;
+                add_to_buffer(&send_buffer, 0xF6, square_counter);
+                square_counter++;
+                
+                
+            }
+        }
+        else if (wheel_click == 0 && wheel_click_prior == 1)
+        {
+            driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
+            add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
+            if (driven_distance >= 40)
+            {
+                stop();
+                _delay_ms(1000);
+                driven_distance = driven_distance % 40;
+                add_to_buffer(&send_buffer, 0xF6, square_counter);
+                square_counter++;
+            }
+        }
+        wheel_click_prior = wheel_click;
+    }
 }
 void mission_phase_1() //Explore the maze
 {
-	update_sensors_and_empty_receive_buffer();
-	
-	// In a straight corridor?:
-	if(distance_front > FRONT_MAX_DISTANCE) // front > 13
-	{
-		// Drive forward:
-		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-	}
-	// In some kind of turn or crossing:
-	else // front < 13
-	{
-		driven_distance = 0;
-		// Stop, check directions and decide which way to go:
-		make_direction_decision();
-	}
-	if (distance_front > 30 && distance_back > 30 &&
-	((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-	(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-	(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
-	{
-		driven_distance = 0;
-		make_direction_decision();
-	}
-	
+    update_sensors_and_empty_receive_buffer();
+    
+    // In a straight corridor?:
+    if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+    {
+        // Drive forward:
+        alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+        go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+    }
+    // In some kind of turn or crossing:
+    else // front < 13
+    {
+        driven_distance = 0;
+        // Stop, check directions and decide which way to go:
+        make_direction_decision();
+    }
+    if (distance_front > 30 && distance_back > 30 &&
+        ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+         (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+         (distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+    {
+        driven_distance = 0;
+        make_direction_decision();
+    }
+    
 };

@@ -28,7 +28,7 @@ double lookuptable[6][50] = {
     {3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
     
     {2.543, 2.351, 2.135, 1.976, 1.849, 1.740, 1.644, 1.552, 1.496, 1.423, 1.352, 1.292, 1.254, 1.197, 1.160, 1.122, 1.079, 1.041, 1.022, 0.984, 0.965, 0.927, 0.908, 0.888, 0.869, 0.847, 0.831, 0.812, 0.793, 0.775, 0.755, 0.736, 0.716, 0},
-    //0		1		2		3		4		5	6		7		8		9	10		11		12	13		14		15		16	17		18		19		20	21		22		23		24	25		26
+    //0     1       2       3       4       5   6       7       8       9   10      11      12  13      14      15      16  17      18      19      20  21      22      23      24  25      26
     //{3.105, 2.735, 2.372, 2.081, 1.790, 1.589, 1.401, 1.271, 1.158, 1.082, 0.996, 0.919, 0.842, 0.804, 0.746, 0.708, 0.666, 0.627, 0.589, 0.569, 0.546, 0.510, 0.491, 0.471, 0.452, 0.432, 0.413, 0.394, 0.391, 0.374, 0.373, 0},
     
     //{3.033, 2.721, 2.106, 1.794, 1.560, 1.404, 1.269, 1.155, 1.073, 0.977, 0.919, 0.847, 0.802, 0.748, 0.700, 0.660, 0.623, 0.602, 0.565, 0.544, 0.523, 0.497, 0.473, 0.466, 0.447, 0.428, 0.422, 0.406, 0.388, 0.384, 0.365, 0}
@@ -36,8 +36,8 @@ double lookuptable[6][50] = {
     {3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
     
     {3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
-
-	{3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
+    
+    {3.020, 2.960,  2.411, 2.043, 1.803, 1.495, 1.392, 1.250, 1.139, 1.059, 0.965, 0.903, 0.849, 0.794, 0.731, 0.740, 0.704, 0.672, 0.634, 0.598, 0.577, 0.557, 0.536, 0.506, 0.490, 0.480, 0.462, 0.441, 0.425, 0.419, 0.402, 0.387, 0},
 };
 
 
@@ -231,7 +231,7 @@ double lookup (double voltage, int sensorindex){
     //i lookuptable är p andelen av den större och p-1 andelen av den mindre som krävs för att få inspänningen.
     //Alltså: Inspänning = p*V_större+(1-p)*V_mindre.
     //Avståndet till identifierat objekt är då
-    //	p*D_större+(1-p)*D_mindre, där D är de avstånd är de avstånd som hör ihop med spänningarna.
+    //  p*D_större+(1-p)*D_mindre, där D är de avstånd är de avstånd som hör ihop med spänningarna.
     p = (lookuptable[sensorindex][i-1] - voltage)/(lookuptable[sensorindex][i-1]-lookuptable[sensorindex][i]);
     return ((p*distances[i-1])+(1-p)*distances[i]);
 }
@@ -305,25 +305,25 @@ void read(){
         input[6][i] = ((double)ADCH*AVCC/256);
     }
     
-   /* // ADC5/Sensor6 - gyro
+    /* // ADC5/Sensor6 - gyro
+     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
+     _delay_ms(0.34);
+     for (int i=0; i<median_amount; i++){
+     ADCSRA |= (1<<ADIF) | (1<<ADSC);
+     _delay_us(34);
+     
+     input[7][i] = 25/12*ADCH + 300;
+     //input[7][i] = ((double)ADCH*AVCC/256);*/
+    
+    // ADC7/Sensor8 - back sensor
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
     _delay_ms(0.34);
     for (int i=0; i<median_amount; i++){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
         _delay_us(34);
-        
-        input[7][i] = 25/12*ADCH + 300;
-        //input[7][i] = ((double)ADCH*AVCC/256);*/
-   
-	// ADC7/Sensor8 - back sensor 
-	 ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
-     _delay_ms(0.34);
-     for (int i=0; i<median_amount; i++){
-	     ADCSRA |= (1<<ADIF) | (1<<ADSC);
-	     _delay_us(34);
-	     input[7][i] = ((double)ADCH*AVCC/256);
-	 }
-     
+        input[7][i] = ((double)ADCH*AVCC/256);
+    }
+    
 }
 
 void queue_to_send(){
@@ -340,15 +340,15 @@ void queue_to_send(){
     char temp_front = (char)lookup(voltage[2], 2);
     char temp_front_left = (char)lookup(voltage[3], 3) + 5;
     char temp_rear_left = (char)lookup(voltage[4], 4);
-	char temp_back = (char)lookup(voltage[7], 5);
+    char temp_back = (char)lookup(voltage[7], 5);
     ///*
     add_to_buffer(&SPI_send_buffer, 0xFF, temp_rear_right);
     add_to_buffer(&SPI_send_buffer, 0xFE, temp_front_right);
     add_to_buffer(&SPI_send_buffer, 0xFD, temp_front);
     add_to_buffer(&SPI_send_buffer, 0xFC, temp_front_left);
     add_to_buffer(&SPI_send_buffer, 0xFB, temp_rear_left);
-	add_to_buffer(&SPI_send_buffer, 0xF7, temp_back);
-	add_to_buffer(&SPI_send_buffer, 0xF6, (uint8_t)100*voltage[0]);
+    add_to_buffer(&SPI_send_buffer, 0xF7, temp_back);
+    //add_to_buffer(&SPI_send_buffer, 0xF6, (uint8_t)100*voltage[0]);
     //*/
     
     /*
@@ -360,21 +360,21 @@ void queue_to_send(){
      */
     
     //Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
-	 if ((voltage[5] >= 3.3) && (black == 0)){
-		 black = 1;
-		 add_to_buffer(&SPI_send_buffer, 0xFA, black);
-	 }
-	 
-	 else if(voltage[5]<3)
-	 {
-		 black = 0;
-		 add_to_buffer(&SPI_send_buffer, 0xFA, black);
-	 }
-	 else
-	 {
-		 add_to_buffer(&SPI_send_buffer, 0xFA, (uint8_t)0);
-	 }
-	   
+    if ((voltage[5] >= 3.3) && (black == 0)){
+        black = 1;
+        add_to_buffer(&SPI_send_buffer, 0xFA, black);
+    }
+    
+    else if(voltage[5]<3)
+    {
+        black = 0;
+        add_to_buffer(&SPI_send_buffer, 0xFA, black);
+    }
+    else
+    {
+        add_to_buffer(&SPI_send_buffer, 0xFA, (uint8_t)0);
+    }
+    
     //Golv-tejpsensor, returnerar 1 då tejp hittas (tejp ger utspänning ~4.3V, golv oklart)
     if (voltage[6] >= 4.2){
         goal_detected = 1;
@@ -386,14 +386,14 @@ void queue_to_send(){
     
     //gyro, returnerar 4.5V då 300grad/sek och 0.5V då -300grad/sek
     /*if (voltage[7]>2.5){
-        //char temp_ola_oscar = round(voltage[7]); //round(300*(-2.5)/2));
-        add_to_buffer(&SPI_send_buffer, 0xF8, (char)(300*(voltage[7]-2.5)/2));//(char)(300*(voltage[7]-2.5)/2));
-        add_to_buffer(&SPI_send_buffer, 0xF7, (char)0);
-    }
-    else{
-        add_to_buffer(&SPI_send_buffer, 0xF8, (char)0);
-        add_to_buffer(&SPI_send_buffer, 0xF7, (char)(300*(2.5-voltage[7])/2));
-    }*/
+     //char temp_ola_oscar = round(voltage[7]); //round(300*(-2.5)/2));
+     add_to_buffer(&SPI_send_buffer, 0xF8, (char)(300*(voltage[7]-2.5)/2));//(char)(300*(voltage[7]-2.5)/2));
+     add_to_buffer(&SPI_send_buffer, 0xF7, (char)0);
+     }
+     else{
+     add_to_buffer(&SPI_send_buffer, 0xF8, (char)0);
+     add_to_buffer(&SPI_send_buffer, 0xF7, (char)(300*(2.5-voltage[7])/2));
+     }*/
     
     //Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
     //Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
