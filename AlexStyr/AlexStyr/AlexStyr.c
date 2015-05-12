@@ -108,30 +108,11 @@ int main(void)
     }
 	
 	init_map();
-	init_floodtest();
-	
-    
-    //Implementation for sending and creating map abstraction. Not done.
-    /*int map[17][17];
-    
-    for (int i = 0; i<17;i++)
-    {
-        for (int j = 0; j<17; j++)
-        {
-            map[i][j] = 0; 
-        }
-    }
-    map[1][4] = 1;
-    map[1][5] = 1;
-    map[1][6] = 1;
-    map[1 ][7] = 1;
-    
-    send_map(map);
-    */
-    /*
+	//init_floodtest()
+	 /*
 	find_first();
 	un = 0;
-    
+   
 	while (un >= 0)
 	{	
 		update_sensors_and_empty_receive_buffer();
@@ -140,15 +121,13 @@ int main(void)
 		update_map();
 		run_command();
 	}
-    
-    //stop();
-    */
+	*/
     for(;;)
     {
         update_sensors_and_empty_receive_buffer();
-        
-        send_map(driveable);
-        
+  
+		//send_map(explored);
+         
         // In a straight corridor?:
         if(distance_front > FRONT_MAX_DISTANCE) // front > 13
         {
@@ -157,9 +136,8 @@ int main(void)
             go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
             
             // update driven_distance:
-            driven_distance = update_driven_distance(driven_distance, wheel_click, wheel_click_prior);
-            wheel_click_prior = wheel_click;
-			robot.distance = driven_distance;
+           // update_driven_distance(driven_distance, wheel_click, wheel_click_prior);
+			//robot.distance = driven_distance;
             /*
             // goal (=tape on the floor) found => stop for 1 sec
             if (goal_found == 1)

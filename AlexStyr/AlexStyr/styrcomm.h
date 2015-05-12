@@ -5,6 +5,7 @@
 #include "bitman.h"
 #include "styr_defs.h"
 #include "steering.h"
+#include "map.h"
 #include <math.h>
 #include <avr/io.h>
 

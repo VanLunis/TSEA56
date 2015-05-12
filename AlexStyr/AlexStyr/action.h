@@ -14,6 +14,7 @@
 // Turn forward:
 
 void turn_forward();
+void update_orientation();
 
 // Turn back:
 void turn_back();

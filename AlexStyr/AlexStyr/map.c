@@ -102,6 +102,8 @@ void init_map()
 
 void update_map()
 {
+	robot.x+=robot.xdir;
+	robot.y+=robot.ydir;
     //lx is x-coord for cell left or robot, ly is y-coord
     int lx = robot.x-robot.ydir;
     int ly = robot.y+robot.xdir;
@@ -133,8 +135,6 @@ void update_map()
     {
         shift_right();
     }
-    robot.x+=robot.xdir;
-    robot.y+=robot.ydir;
 	
 	if (robot.lwall){
 		driveable[lx][ly] = 0;
@@ -145,6 +145,7 @@ void update_map()
 	if (robot.rwall){
 		driveable[rx][ry] = 0;
 	}
+	explored[robot.x][robot.y] = 1;
 	explored[lx][ly] = 1;
 	explored[fx][fy] = 1;
 	explored[rx][ry] = 1;

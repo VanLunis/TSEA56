@@ -145,6 +145,11 @@ void remote_control(char control_val){
 
 void send_map(int map[17][17])
 {
+	add_to_buffer(&send_buffer, 0xB1, (uint8_t)robot.x);
+	add_to_buffer(&send_buffer, 0xB2, (uint8_t)robot.y);
+	add_to_buffer(&send_buffer, 0xB3, (uint8_t)(robot.xdir+1));
+	add_to_buffer(&send_buffer, 0xB4, (uint8_t)(robot.ydir+1));
+
     unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
     
     for (int row = 0; row<15; row++) // Loop for each row

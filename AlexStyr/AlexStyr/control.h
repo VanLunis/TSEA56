@@ -28,7 +28,7 @@ double controller(double e, double alpha, double e_prior, double alpha_prior, do
 void setMotor(double u, double alpha);
 double set_alpha(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front);
 void forward_slow();
-unsigned char update_driven_distance(unsigned char driven_distance, unsigned char wheel_click, unsigned char wheel_click_prior );
+
 
 void set_speed_right_wheels(unsigned char new_speed_percentage);
 void set_speed_left_wheels(unsigned char new_speed_percentage);

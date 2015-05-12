@@ -15,7 +15,6 @@ double e_prior = 0;
 double alpha_prior = 0;
 double e_prior_prior = 0;
 double alpha_prior_prior = 0;
-unsigned char driven_distance = 0;
 unsigned char wheel_click_prior = 0;
 
 void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, double* ptr_alpha, double* ptr_alpha_prior, double* ptr_alpha_prior_prior )

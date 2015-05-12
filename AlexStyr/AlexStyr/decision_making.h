@@ -21,7 +21,7 @@ void make_decision();
 // MAZE FUNCTIONS: -----------------------------------------------
 unsigned char get_possible_directions();
 void make_direction_decision();
-
+void update_driven_distance(unsigned char driven_distance, unsigned char wheel_click, unsigned char wheel_click_prior );
 
 
 #endif

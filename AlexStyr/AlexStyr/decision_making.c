@@ -13,7 +13,7 @@ unsigned char get_possible_directions()
      
      LRFB	
      possible_direction:
-     (-----|--1-) => forward open
+     (-----|--1-) => forward open 
      (-----|-1--) => right open
      (-----|1---) => left open
      
@@ -27,6 +27,7 @@ unsigned char get_possible_directions()
 	else{
 		robot.bwall = 1;
 	}
+	
     if (distance_front > 25)
     {
         // open forward 
@@ -37,6 +38,7 @@ unsigned char get_possible_directions()
 	{
 		robot.fwall = 1;
 	}
+	
     if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||((distance_right_front > 28 || distance_right_back > 28) && distance_front < 15))//added distance_right_back to test
     {
         // open to right:
@@ -47,6 +49,7 @@ unsigned char get_possible_directions()
 	{
 		robot.rwall = 1;
 	}
+	
     if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||((distance_left_front > 28 || distance_left_back > 28) && distance_front < 15))//added ditance_left_back to test
     {
         // open to left:
@@ -57,10 +60,12 @@ unsigned char get_possible_directions()
 	{
 		robot.lwall = 1;
 	}
+	
     return possible_directions;
 }
 void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
 {
+	//update_map();
     unsigned char possible_directions = get_possible_directions();
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
     // TODO: Implement the actual algorithm we want to use
@@ -68,47 +73,54 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     if(possible_directions == 0x01)// dead end
     {
         turn_back();
+		driven_distance = 0;
         turn_forward();
     }	
     else if(possible_directions == 0x05 || possible_directions == 0x04)// right turn 90 degrees //OBS: added 4 to test
     {
         turn_right();
+		driven_distance = 0;
         turn_forward();
     }
     else if(possible_directions == 0x07 || possible_directions == 0x06)// closed left t-crossing //OBS: added 6 to test
     {
         turn_right();
+		driven_distance = 0;
         turn_forward();
     }
     else if(possible_directions == 0x09 || possible_directions == 0x08)// left turn 90 degrees //OBS: added 8 to test
     {
         turn_left();
+		driven_distance = 0;
         turn_forward();
     }
     else if(possible_directions == 0x0B || possible_directions == 0x0A)// closed right t-crossing //OBS: added A to test
     {
+		driven_distance = 0;
         turn_forward();
     }
     else if(possible_directions == 0x0D || possible_directions == 0x0C)// closed front t-crossing //OBS: added C to test
     {
         turn_right();
+		driven_distance = 0;
         turn_forward();
     }
     else if(possible_directions == 0x0F || possible_directions == 0x0E)// 4-way-crossing //OBS: added E to test
     {
         turn_right();
+		driven_distance = 0;
         turn_forward();	
     }
     else
     {
         stop();
-        _delay_ms(50);
-        _delay_ms(50);
+        _delay_ms(500);
+        _delay_ms(500);
         // Indicates that something went wrong
         // TODO: Add functionality to correct position and continue
     }
 }
-unsigned char update_driven_distance(unsigned char driven_distance, unsigned char wheel_click, unsigned char wheel_click_prior){
+void update_driven_distance(unsigned char driven_distance, unsigned char wheel_click, unsigned char wheel_click_prior){
     
 #define WHEEL_CLICK_DISTANCE 5 //3.14*2*3.1/4 = distance for each click for the wheel
     
@@ -118,9 +130,10 @@ unsigned char update_driven_distance(unsigned char driven_distance, unsigned cha
         add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
         if (driven_distance >= 40)
         {
-            stop();
-            _delay_ms(1000);
-            driven_distance = 0;
+            //stop();
+            //_delay_ms(1000);
+			update_map();
+            driven_distance = driven_distance % 40;
         }
     }else if (wheel_click == 0 && wheel_click_prior == 1)
     {
@@ -128,17 +141,21 @@ unsigned char update_driven_distance(unsigned char driven_distance, unsigned cha
         add_to_buffer(&send_buffer,0xEF, (char)driven_distance);
         if (driven_distance >= 40)
         {
-            stop();
-            _delay_ms(1000);
-            driven_distance = 0;
+            //stop();
+            //_delay_ms(1000);
+			update_map();
+            driven_distance =  driven_distance % 40;
         }
     }
-    return driven_distance;
+	
+	wheel_click_prior = wheel_click;
+
 }
 
 //Skall kallas i beslutpunkter
 void make_decision()
 {
+	update_map();
 	driven_distance = 0;
     int lx = robot.x-robot.ydir;
     int ly = robot.y+robot.xdir;

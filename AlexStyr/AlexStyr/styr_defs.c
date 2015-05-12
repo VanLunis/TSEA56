@@ -14,3 +14,4 @@ unsigned char distance_front = 0;
 unsigned char distance_back = 0;
 unsigned char wheel_click = 0;
 unsigned char goal_found = 0;
+unsigned char driven_distance = 0;
