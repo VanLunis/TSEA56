@@ -96,6 +96,14 @@ void init_map(){
 	y = 8;
 	xdir = 0;
 	ydir = 1;
+	for (int i = 0; i < 17; i++)
+	{
+		for (int j = 0; j < 17; j++)
+		{
+			explored[i][j] = 0;
+			driveable[i][j] = 0;
+		}
+	}
 }
 
 //updates the robots orientation, call from turn-functions
@@ -160,6 +168,27 @@ void update_orientation(char turn){
 void update_position(){
 	x = x + xdir;
 	y = y + ydir;
+}
+
+void update_map(){
+	int lx = x-ydir;
+	int ly = y+xdir;
+
+	//analog to lx/ly for right cell
+	int rx = x+ydir;
+	int ry = y-xdir;
+
+	//forward cell
+	int fx = x+xdir;
+	int fy = y+ydir;
+	
+	explored[lx][ly] = 1;
+	explored[fx][fy] = 1;
+	explored[rx][ry] = 1;
+	explored[x][y] = 1;
+	driveable[x][y] = 1;
+	
+	
 }
 /*
 void print_driveable()

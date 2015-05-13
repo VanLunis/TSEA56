@@ -367,6 +367,61 @@ void receive_from_master(struct data_buffer* my_buffer)
         transmission_status = 0;
     }
 }
+void send_map(int map[17][17])
+{
+	unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
+	
+	for (int row = 0; row<15; row++) // Loop for each row
+	{
+		
+		// loop for the first 5 columns in each row:
+		for (int column = 0; column<5; column++)
+		{
+			if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+			{
+				bit_set(char_to_send, BIT(column));
+			}
+			else
+			{
+				bit_clear(char_to_send, BIT(column));
+			}
+		}
+		add_to_buffer(&send_buffer,0xEE - (3*row) ,char_to_send); // EDIT TYPE NUMBER!
+		
+		char_to_send = 0x80;
+		// loop for the following 6-10 columns
+		for (int column = 5; column<10; column++)
+		{
+			
+			if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+			{
+				bit_set(char_to_send, BIT(column-5));
+			}
+			else
+			{
+				bit_clear(char_to_send, BIT(column-5));
+			}
+		}
+		add_to_buffer(&send_buffer,0xEE - (3*row + 1),char_to_send); // EDIT TYPE NUMBER!
+		
+		char_to_send = 0x80;
+		// loop for the following 11-15 columns
+		for (int column = 10; column<15; column++)
+		{
+			if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+			{
+				bit_set(char_to_send, BIT(column-10));
+			}
+			else
+			{
+				bit_clear(char_to_send, BIT(column-10));
+			}
+		}
+		add_to_buffer(&send_buffer,0xEE - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
+		
+		
+	}// end of row loop
+}
 
 // In autonomous mode: get sensor values from receive buffer
 void update_values_from_sensor(){
@@ -1124,6 +1179,8 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     {
         square_counter++;
 		update_position();// TEST TEST
+		update_map();
+		send_map(explored);
     }
     unsigned char possible_directions = get_possible_directions();
     //add_to_buffer(&send_buffer, 0xF6,(char) square_counter);
@@ -1186,6 +1243,8 @@ void update_driven_distance(){
             {
 				driven_distance = 0;
 				update_position();
+				update_map();
+				send_map(explored);
 				add_to_buffer(&send_buffer, 0xB1, (char) x);
 				add_to_buffer(&send_buffer, 0xB2, (char) y);
 				add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
@@ -1201,6 +1260,8 @@ void update_driven_distance(){
             {
 				driven_distance = 0;
 				update_position();
+				update_map();
+				send_map(explored);
 				add_to_buffer(&send_buffer, 0xB1, (char) x);
 				add_to_buffer(&send_buffer, 0xB2, (char) y);
 				add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
