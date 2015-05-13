@@ -178,45 +178,42 @@ void update_position(){
 }
 
 void update_map(){
-    int lx = x-ydir;
-    int ly = y+xdir;
     
-    //analog to lx/ly for right cell
-    int rx = x+ydir;
-    int ry = y-xdir;
-    
-    //forward cell
-    int fx = x+xdir;
-    int fy = y+ydir;
-    
-    
-    
-    // added map shift function. PLACED WRONG?
-    if (y == MAP_SIZE - 2)
+	// added map shift function. PLACED WRONG?
+	if (y == MAP_SIZE - 1)
     {
         shift_down();
     }
     
-    if (x == MAP_SIZE - 2)
+    if (x == MAP_SIZE - 1)
     {
         shift_left();
     }
     
-    if (y == 1)
+    if (y == 0)
     {
         shift_up();
     }
     
-    if (x == 1)
+    if (x == 0)
     {
         shift_right();
     }
     
-    
-    
-    
     // END OF MAP SHIFT
     
+	int lx = x-ydir;
+	int ly = y+xdir;
+	
+	//analog to lx/ly for right cell
+	int rx = x+ydir;
+	int ry = y-xdir;
+	
+	//forward cell
+	int fx = x+xdir;
+	int fy = y+ydir;
+	
+	
     explored[lx][ly] = 1;
     explored[fx][fy] = 1;
     explored[rx][ry] = 1;

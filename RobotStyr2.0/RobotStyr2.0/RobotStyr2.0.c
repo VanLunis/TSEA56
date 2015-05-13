@@ -376,7 +376,7 @@ void send_driveable()
         // loop for the first 5 columns in each row:
         for (int column = 0; column<5; column++)
         {
-            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
+            if (driveable[column+1][row+1] == 1) // +1 since the driveable is 17x17
             {
                 bit_set(char_to_send, BIT(column));
             }
@@ -392,7 +392,7 @@ void send_driveable()
         for (int column = 5; column<10; column++)
         {
             
-            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
+            if (driveable[column+1][row+1] == 1) // +1 since the driveable is 17x17
             {
                 bit_set(char_to_send, BIT(column-5));
             }
@@ -407,7 +407,7 @@ void send_driveable()
         // loop for the following 11-15 columns
         for (int column = 10; column<15; column++)
         {
-            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
+            if (driveable[column+1][row+1] == 1) // +1 since the driveable is 17x17
             {
                 bit_set(char_to_send, BIT(column-10));
             }
@@ -431,7 +431,7 @@ void send_explored()
 		// loop for the first 5 columns in each row:
 		for (int column = 0; column<5; column++)
 		{
-			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
+			if (explored[column+1][row+1] == 1) // +1 since the explored is 17x17
 			{
 				bit_set(char_to_send, BIT(column));
 			}
@@ -447,7 +447,7 @@ void send_explored()
 		for (int column = 5; column<10; column++)
 		{
 			
-			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
+			if (explored[column+1][row+1] == 1) // +1 since the explored is 17x17
 			{
 				bit_set(char_to_send, BIT(column-5));
 			}
@@ -462,7 +462,7 @@ void send_explored()
 		// loop for the following 11-15 columns
 		for (int column = 10; column<15; column++)
 		{
-			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
+			if (explored[column+1][row+1] == 1) // +1 since the explored is 17x17
 			{
 				bit_set(char_to_send, BIT(column-10));
 			}
@@ -471,8 +471,7 @@ void send_explored()
 				bit_clear(char_to_send, BIT(column-10));
 			}
 		}
-		add_to_buffer(&send_buffer,0xAE
-		 - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
+		add_to_buffer(&send_buffer,0xAE - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
 		
 		
 	}// end of row loop
