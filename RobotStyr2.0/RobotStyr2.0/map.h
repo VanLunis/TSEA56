@@ -9,15 +9,14 @@ int8_t x;
 int8_t y;
 int8_t xdir;
 int8_t ydir;
-
+int goal[2];
 
 //Origin is the upper left element.
 int driveable[MAP_SIZE][MAP_SIZE];
 int explored[MAP_SIZE][MAP_SIZE];
 int costmap[MAP_SIZE][MAP_SIZE];
-int goal[2];
-int robotpos[2];
-int start[2];
+
+//int start[2];
 
 void shift_up();
 void shift_right();
