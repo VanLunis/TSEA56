@@ -12,6 +12,8 @@ unsigned char command[50];
 int c;
 point end;
 point path[50];
+point unvisited[50];
+int un;
 
 void fill_square(point p, int cost);
 

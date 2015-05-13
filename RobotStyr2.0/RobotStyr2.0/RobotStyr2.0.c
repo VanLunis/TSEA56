@@ -17,6 +17,7 @@
 #include "buffer.h"
 #include <stdlib.h>
 #include "map.h"
+#include "shortest_path.h"
 
 // CONSTANTS //////////////////////////////////////////////////////////
 // Define speeds
@@ -1271,35 +1272,24 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     
     // TODO: Implement the actual algorithm we want to use
     in_turn = 1;
-    if(possible_directions == 0x01)// dead end
-    {
-        turn_back();
-    }
-    else if(possible_directions == 0x05 || possible_directions == 0x04)// right turn 90 degrees //OBS: added 4 to test
-    {
-        turn_right();
-    }
-    else if(possible_directions == 0x07 || possible_directions == 0x06)// closed left t-crossing //OBS: added 6 to test
-    {
-        turn_right();
-    }
-    else if(possible_directions == 0x09 || possible_directions == 0x08)// left turn 90 degrees //OBS: added 8 to test
-    {
-        turn_left();
-    }
-    else if(possible_directions == 0x0B || possible_directions == 0x0A)// closed right t-crossing //OBS: added A to test
-    {
-        ;
-    }
-    else if(possible_directions == 0x0D || possible_directions == 0x0C)// closed front t-crossing //OBS: added C to test
-    {
-        turn_right();
-    }
-    
-    else if(possible_directions == 0x0F || possible_directions == 0x0E)// 4-way-crossing //OBS: added E to test
-    {
-        turn_right();
-    }
+	
+	if (!rwall)
+	{
+		turn_right();
+	}
+	else if (!fwall)
+	{
+		;
+	}
+	else if(!lwall)
+	{
+		turn_left();
+	}
+	else
+	{
+		turn_back();
+	}
+	
     in_turn = 0;
     driven_distance = 0;
     

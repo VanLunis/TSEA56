@@ -107,6 +107,12 @@
     <Compile Include="RobotStyr2.0.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="shortest_path.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="shortest_path.h">
+      <SubType>compile</SubType>
+    </Compile>
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>
