@@ -70,11 +70,10 @@ unsigned char distance_back = 0;
 
 // Driven distance variables
 unsigned char driven_distance = 5; //drives too far when turned on
-unsigned char test_total_driven_distance = 0; // TEST TEST
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
 unsigned char in_turn = 0;
-unsigned char square_counter = 0;
+unsigned char goal_detected = 0;
 
 // Initiates control variables
 double e = 0; // Position error
@@ -216,33 +215,33 @@ void update_orientation(char turn);
 int main(void)
 {
     init_control_module();
-	sei();
-	init_map();
-
-	
+    sei();
+    init_map();
+    
+    
     // To make the robot stand still when turned on:
-	
+    
     if (autonomous_mode == 1)
     {
-		while(distance_front < FRONT_MAX_DISTANCE)
-		{
-			update_values_from_sensor();
-		}
-		
-		stop();
+        while(distance_front < FRONT_MAX_DISTANCE)
+        {
+            update_values_from_sensor();
+        }
+        
+        stop();
     }
-
+    
     for(;;)
     {
-		if (autonomous_mode == 1)
-		{
-			mission_phase_1();
-		}
-
+        if (autonomous_mode == 1)
+        {
+            mission_phase_1();
+        }
+        
         // In remote control mode?:
         else
-		{
-		remote_control_mode();
+        {
+            remote_control_mode();
         }
     }
     
@@ -367,7 +366,62 @@ void receive_from_master(struct data_buffer* my_buffer)
         transmission_status = 0;
     }
 }
-void send_map(int map[17][17])
+void send_driveable()
+{
+    unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
+    
+    for (int row = 0; row<15; row++) // Loop for each row
+    {
+        
+        // loop for the first 5 columns in each row:
+        for (int column = 0; column<5; column++)
+        {
+            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
+            {
+                bit_set(char_to_send, BIT(column));
+            }
+            else
+            {
+                bit_clear(char_to_send, BIT(column));
+            }
+        }
+        add_to_buffer(&send_buffer,0xEE - (3*row) ,char_to_send); // EDIT TYPE NUMBER!
+        
+        char_to_send = 0x80;
+        // loop for the following 6-10 columns
+        for (int column = 5; column<10; column++)
+        {
+            
+            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
+            {
+                bit_set(char_to_send, BIT(column-5));
+            }
+            else
+            {
+                bit_clear(char_to_send, BIT(column-5));
+            }
+        }
+        add_to_buffer(&send_buffer,0xEE - (3*row + 1),char_to_send); // EDIT TYPE NUMBER!
+        
+        char_to_send = 0x80;
+        // loop for the following 11-15 columns
+        for (int column = 10; column<15; column++)
+        {
+            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
+            {
+                bit_set(char_to_send, BIT(column-10));
+            }
+            else
+            {
+                bit_clear(char_to_send, BIT(column-10));
+            }
+        }
+        add_to_buffer(&send_buffer,0xEE - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
+        
+        
+    }// end of row loop
+}
+void send_explored()
 {
 	unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
 	
@@ -377,7 +431,7 @@ void send_map(int map[17][17])
 		// loop for the first 5 columns in each row:
 		for (int column = 0; column<5; column++)
 		{
-			if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
 			{
 				bit_set(char_to_send, BIT(column));
 			}
@@ -386,14 +440,14 @@ void send_map(int map[17][17])
 				bit_clear(char_to_send, BIT(column));
 			}
 		}
-		add_to_buffer(&send_buffer,0xEE - (3*row) ,char_to_send); // EDIT TYPE NUMBER!
+		add_to_buffer(&send_buffer,0xAE - (3*row) ,char_to_send); // EDIT TYPE NUMBER!
 		
 		char_to_send = 0x80;
 		// loop for the following 6-10 columns
 		for (int column = 5; column<10; column++)
 		{
 			
-			if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
 			{
 				bit_set(char_to_send, BIT(column-5));
 			}
@@ -402,13 +456,13 @@ void send_map(int map[17][17])
 				bit_clear(char_to_send, BIT(column-5));
 			}
 		}
-		add_to_buffer(&send_buffer,0xEE - (3*row + 1),char_to_send); // EDIT TYPE NUMBER!
+		add_to_buffer(&send_buffer,0xAE - (3*row + 1),char_to_send); // EDIT TYPE NUMBER!
 		
 		char_to_send = 0x80;
 		// loop for the following 11-15 columns
 		for (int column = 10; column<15; column++)
 		{
-			if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
 			{
 				bit_set(char_to_send, BIT(column-10));
 			}
@@ -417,7 +471,8 @@ void send_map(int map[17][17])
 				bit_clear(char_to_send, BIT(column-10));
 			}
 		}
-		add_to_buffer(&send_buffer,0xEE - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
+		add_to_buffer(&send_buffer,0xAE
+		 - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
 		
 		
 	}// end of row loop
@@ -462,6 +517,34 @@ void update_values_from_sensor(){
                 break;
                 
             case 0xF9:  // tejp sensor floor:
+                if (goal_detected == 0)
+                {
+                    
+                    if (fetch_from_buffer(&receive_buffer).val == 1)
+                    {
+                        goal_detected = 1;
+                        
+                        stop();
+                        for (int i = 0; i<10; i++)
+                        {
+                            _delay_ms(100);
+                        }
+                        
+						goalx = x + xdir;
+						goaly = y + ydir;
+						/*
+                        if (driven_distance > 10)
+                        {
+                            goalx = x + xdir;
+                            goaly = y + ydir;
+                        }
+                        else
+                        {
+                            goalx = x;
+                            goaly = y;
+                        }*/
+                    }
+                }
                 break;
                 
         } // end of switch
@@ -508,14 +591,14 @@ void remote_control(char control_val){
 }
 void remote_control_mode()// SWITCH
 {
-	if(!buffer_empty(&receive_buffer))
-	{
-		if(fetch_from_buffer(&receive_buffer).type == 0x01)
-		{
-			remote_control(fetch_from_buffer(&receive_buffer).val);
-		}
-		discard_from_buffer(&receive_buffer);
-	}
+    if(!buffer_empty(&receive_buffer))
+    {
+        if(fetch_from_buffer(&receive_buffer).type == 0x01)
+        {
+            remote_control(fetch_from_buffer(&receive_buffer).val);
+        }
+        discard_from_buffer(&receive_buffer);
+    }
 }
 
 // MOTOR FUNCTIONS: ----------------------------------------------
@@ -643,9 +726,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, *ptr_alpha, *ptr_e_prior, *ptr_alpha_prior, *ptr_e_prior_prior,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1,(char) *ptr_alpha);
-        //add_to_buffer(&send_buffer,0xF0,(char) *ptr_e);
         
         // updates values for PD:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -660,8 +740,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(0, *ptr_alpha, 0, *ptr_alpha_prior, 0,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -677,8 +755,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -694,8 +770,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -793,13 +867,13 @@ void turn_forward()
 // Turn back:
 void turn_back()
 {
-	update_orientation('b');
+    update_orientation('b');
     if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE
        && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
     {
         turn_back_control_on_both_walls();
     }
- 
+    
 }
 void turn_back_control_on_both_walls()
 {
@@ -852,7 +926,7 @@ void turn_back_control_on_both_walls()
 // Turn left:
 void turn_left()
 {
-	update_orientation('l');
+    update_orientation('l');
     if(distance_front < WALLS_MAX_DISTANCE)
     {
         turn_left_control_on_right_wall();
@@ -997,7 +1071,7 @@ void turn_left_control_on_back_wall()
 // Turn right:
 void turn_right()
 {
-	update_orientation('r');
+    update_orientation('r');
     if(distance_front < WALLS_MAX_DISTANCE)
     {
         turn_right_control_on_left_wall();
@@ -1133,6 +1207,7 @@ void turn_right_control_on_back_wall()
 }
 
 // MAZE FUNCTIONS: -----------------------------------------------
+
 unsigned char get_possible_directions()
 {
     //TODO: Check in all crossings/turns if this really shows correct values
@@ -1145,9 +1220,13 @@ unsigned char get_possible_directions()
      (-----|--1-) => forward open
      (-----|-1--) => right open
      (-----|1---) => left open
-     
+	 
      ex: (----|1100) => right AND left open
      */
+	fwall = 1;
+	lwall = 1;
+	rwall = 1;
+	
     if (distance_back > 25)
     {
         possible_directions |= 0x01;
@@ -1156,16 +1235,19 @@ unsigned char get_possible_directions()
     {
         // open forward
         possible_directions |= 0x02;
+		fwall = 0;
     }
     if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||((distance_right_front > 28 || distance_right_back > 28) && distance_front < 15))//added distance_right_back to test
     {
         // open to right:
         possible_directions |= 0x04;
+		rwall = 0;
     }
     if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||((distance_left_front > 28 || distance_left_back > 28) && distance_front < 15))//added ditance_left_back to test
     {
         // open to left:
         possible_directions |= 0x08;
+		lwall = 0;
     }
     if (possible_directions == 0x00)
     {
@@ -1175,20 +1257,19 @@ unsigned char get_possible_directions()
 }
 void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
 {
-    if (driven_distance > 20)
+    
+    if (driven_distance > 10)
     {
-        square_counter++;
-		update_position();// TEST TEST
-		update_map();
-		send_map(explored);
+        update_position();// TEST TEST
+        update_map();
+        send_driveable();
+		send_explored();
     }
     unsigned char possible_directions = get_possible_directions();
-    //add_to_buffer(&send_buffer, 0xF6,(char) square_counter);
+
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
     driven_distance = 0;
-	test_total_driven_distance = 0;
     
-    square_counter = 0;
     // TODO: Implement the actual algorithm we want to use
     in_turn = 1;
     if(possible_directions == 0x01)// dead end
@@ -1215,21 +1296,25 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     {
         turn_right();
     }
+    
     else if(possible_directions == 0x0F || possible_directions == 0x0E)// 4-way-crossing //OBS: added E to test
     {
         turn_right();
     }
     in_turn = 0;
     driven_distance = 0;
-	test_total_driven_distance = 0;
-	
+    
+    //	send_driveable();
+    
     turn_forward();
-	
-	add_to_buffer(&send_buffer, 0xB1, (char) x);
-	add_to_buffer(&send_buffer, 0xB2, (char) y);
-	add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-	add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes		
-		
+    
+    add_to_buffer(&send_buffer, 0xB1, (char) x);
+    add_to_buffer(&send_buffer, 0xB2, (char) y);
+    add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
+    add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+	add_to_buffer(&send_buffer,0xF1,(char)goalx);
+	add_to_buffer(&send_buffer,0xF2,(char)goaly);
+    
 }
 void update_driven_distance(){
     if (!in_turn)
@@ -1237,36 +1322,40 @@ void update_driven_distance(){
         if (wheel_click == 1 && wheel_click_prior == 0)
         {
             driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-			test_total_driven_distance = test_total_driven_distance + WHEEL_CLICK_DISTANCE; // TEST TEST
-            add_to_buffer(&send_buffer,0xEF, (char) test_total_driven_distance); // TEST TEST
-            if (driven_distance >= 40)
+            
+            if (driven_distance >= 20)
             {
-				driven_distance = 0;
-				update_position();
-				update_map();
-				send_map(explored);
-				add_to_buffer(&send_buffer, 0xB1, (char) x);
-				add_to_buffer(&send_buffer, 0xB2, (char) y);
-				add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-				add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-                //add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
+                
+                driven_distance = 0;
+                update_position();
+                update_map();
+                send_driveable();
+				send_explored();
+                add_to_buffer(&send_buffer, 0xB1, (char) x);
+                add_to_buffer(&send_buffer, 0xB2, (char) y);
+                add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
+                add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+				add_to_buffer(&send_buffer,0xF1,(char)goalx);
+				add_to_buffer(&send_buffer,0xF2,(char)goaly);
             }
         }
         else if (wheel_click == 0 && wheel_click_prior == 1)
         {
-            test_total_driven_distance = test_total_driven_distance + WHEEL_CLICK_DISTANCE; // TEST TEST
-            add_to_buffer(&send_buffer,0xEF, (char) test_total_driven_distance); // TEST TEST
-            if (driven_distance >= 40)
+            
+            if (driven_distance >= 20)
             {
-				driven_distance = 0;
-				update_position();
-				update_map();
-				send_map(explored);
-				add_to_buffer(&send_buffer, 0xB1, (char) x);
-				add_to_buffer(&send_buffer, 0xB2, (char) y);
-				add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-				add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-				//add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
+                
+                driven_distance = 0;
+                update_position();
+                update_map();
+                send_driveable();
+				send_explored();
+                add_to_buffer(&send_buffer, 0xB1, (char) x);
+                add_to_buffer(&send_buffer, 0xB2, (char) y);
+                add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
+                add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+				add_to_buffer(&send_buffer,0xF1,(char)goalx);
+				add_to_buffer(&send_buffer,0xF2,(char)goaly);
             }
         }
         wheel_click_prior = wheel_click;
@@ -1275,7 +1364,9 @@ void update_driven_distance(){
 void mission_phase_1() //Explore the maze
 {
     update_sensors_and_empty_receive_buffer();
-	
+    
+    
+    
     // In a straight corridor?:
     if(distance_front > FRONT_MAX_DISTANCE) // front > 13
     {
@@ -1287,7 +1378,7 @@ void mission_phase_1() //Explore the maze
     else // front < 13
     {		
         // Stop, check directions and decide which way to go:      
-	    make_direction_decision();
+        make_direction_decision();
     }
     if (distance_front > 30 && distance_back > 30 &&
         ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
