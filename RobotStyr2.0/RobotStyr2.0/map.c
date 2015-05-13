@@ -7,7 +7,9 @@ int8_t xdir = 0;
 int8_t ydir = 1;
 int8_t goalx = 140;
 int8_t goaly = 140;
-
+int8_t fwall = 0;
+int8_t rwall = 0;
+int8_t lwall = 0;
 
 
 //Shifts the elements up. (Keep in mind that lower left corner is the origin)
@@ -82,7 +84,7 @@ void shift_left()
             explored[i][j] = explored[i+1][j];
         }
     }
-    for (int j = 0; j < MAP_SIZE; j++)
+    for (int j =	0; j < MAP_SIZE; j++)
     {
         driveable[MAP_SIZE-1][j]= 0;
         explored[MAP_SIZE-1][j] = 0;

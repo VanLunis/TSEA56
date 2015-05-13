@@ -366,7 +366,7 @@ void receive_from_master(struct data_buffer* my_buffer)
         transmission_status = 0;
     }
 }
-void send_map(int map[17][17])
+void send_driveable()
 {
     unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
     
@@ -376,7 +376,7 @@ void send_map(int map[17][17])
         // loop for the first 5 columns in each row:
         for (int column = 0; column<5; column++)
         {
-            if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
             {
                 bit_set(char_to_send, BIT(column));
             }
@@ -392,7 +392,7 @@ void send_map(int map[17][17])
         for (int column = 5; column<10; column++)
         {
             
-            if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
             {
                 bit_set(char_to_send, BIT(column-5));
             }
@@ -407,7 +407,7 @@ void send_map(int map[17][17])
         // loop for the following 11-15 columns
         for (int column = 10; column<15; column++)
         {
-            if (map[row+1][column+1] == 1) // +1 since the map is 17x17
+            if (driveable[row+1][column+1] == 1) // +1 since the driveable is 17x17
             {
                 bit_set(char_to_send, BIT(column-10));
             }
@@ -420,6 +420,62 @@ void send_map(int map[17][17])
         
         
     }// end of row loop
+}
+void send_explored()
+{
+	unsigned char char_to_send = 0x80; // first bit is set to not be sending nullbyte to PC!
+	
+	for (int row = 0; row<15; row++) // Loop for each row
+	{
+		
+		// loop for the first 5 columns in each row:
+		for (int column = 0; column<5; column++)
+		{
+			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
+			{
+				bit_set(char_to_send, BIT(column));
+			}
+			else
+			{
+				bit_clear(char_to_send, BIT(column));
+			}
+		}
+		add_to_buffer(&send_buffer,0xAE - (3*row) ,char_to_send); // EDIT TYPE NUMBER!
+		
+		char_to_send = 0x80;
+		// loop for the following 6-10 columns
+		for (int column = 5; column<10; column++)
+		{
+			
+			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
+			{
+				bit_set(char_to_send, BIT(column-5));
+			}
+			else
+			{
+				bit_clear(char_to_send, BIT(column-5));
+			}
+		}
+		add_to_buffer(&send_buffer,0xAE - (3*row + 1),char_to_send); // EDIT TYPE NUMBER!
+		
+		char_to_send = 0x80;
+		// loop for the following 11-15 columns
+		for (int column = 10; column<15; column++)
+		{
+			if (explored[row+1][column+1] == 1) // +1 since the explored is 17x17
+			{
+				bit_set(char_to_send, BIT(column-10));
+			}
+			else
+			{
+				bit_clear(char_to_send, BIT(column-10));
+			}
+		}
+		add_to_buffer(&send_buffer,0xAE
+		 - (3*row + 2),char_to_send); // EDIT TYPE NUMBER!
+		
+		
+	}// end of row loop
 }
 
 // In autonomous mode: get sensor values from receive buffer
@@ -1164,9 +1220,13 @@ unsigned char get_possible_directions()
      (-----|--1-) => forward open
      (-----|-1--) => right open
      (-----|1---) => left open
-     
+	 
      ex: (----|1100) => right AND left open
      */
+	fwall = 1;
+	lwall = 1;
+	rwall = 1;
+	
     if (distance_back > 25)
     {
         possible_directions |= 0x01;
@@ -1175,16 +1235,19 @@ unsigned char get_possible_directions()
     {
         // open forward
         possible_directions |= 0x02;
+		fwall = 0;
     }
     if ((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE )||((distance_right_front > 28 || distance_right_back > 28) && distance_front < 15))//added distance_right_back to test
     {
         // open to right:
         possible_directions |= 0x04;
+		rwall = 0;
     }
     if ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||((distance_left_front > 28 || distance_left_back > 28) && distance_front < 15))//added ditance_left_back to test
     {
         // open to left:
         possible_directions |= 0x08;
+		lwall = 0;
     }
     if (possible_directions == 0x00)
     {
@@ -1199,7 +1262,8 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     {
         update_position();// TEST TEST
         update_map();
-        send_map(driveable);
+        send_driveable();
+		send_explored();
     }
     unsigned char possible_directions = get_possible_directions();
 
@@ -1240,7 +1304,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     in_turn = 0;
     driven_distance = 0;
     
-    //	send_map(driveable);
+    //	send_driveable();
     
     turn_forward();
     
@@ -1265,7 +1329,8 @@ void update_driven_distance(){
                 driven_distance = 0;
                 update_position();
                 update_map();
-                send_map(driveable);
+                send_driveable();
+				send_explored();
                 add_to_buffer(&send_buffer, 0xB1, (char) x);
                 add_to_buffer(&send_buffer, 0xB2, (char) y);
                 add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
@@ -1283,7 +1348,8 @@ void update_driven_distance(){
                 driven_distance = 0;
                 update_position();
                 update_map();
-                send_map(driveable);
+                send_driveable();
+				send_explored();
                 add_to_buffer(&send_buffer, 0xB1, (char) x);
                 add_to_buffer(&send_buffer, 0xB2, (char) y);
                 add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes

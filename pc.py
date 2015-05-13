@@ -1,30 +1,30 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+ 
 from Tkinter import Tk, W, E, S, N
 from ttk import Frame, Button, Label, Style
 from ttk import Entry
-
+ 
 import serial
 import time
 import os
 from random import randint
-
+ 
 from Tkinter import *
-
+ 
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-
+ 
 import time
 from numpy import arange, sin, pi
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
-
+ 
 # serial.Serial(port, bps, bytesize, parity bit, stopp bit, timeout)
-ser = serial.Serial('COM34',115200, 8, serial.PARITY_NONE, 1,0) # ser is the variable for the serial port, i.e. bluetooth
+ser = serial.Serial('COM39',115200, 8, serial.PARITY_NONE, 1,0) # ser is the variable for the serial port, i.e. bluetooth
 ser.flushInput()
-
+ 
 irsens = [0, 0, 0, 0, 0]
 rsens = [0, 0]
 alpha = [0, 0]
@@ -45,25 +45,27 @@ robo_pos_x = 0
 robo_pos_y = 0
 goal_coord_x=0
 goal_coord_y=0
-map = [[0 for x in range(15)] for x in range(15)]
-
+ 
+driveable = [[0 for x in range(15)] for x in range(15)]
+explored = [[0 for i in range(15)] for i in range(15)]
+ 
 def quit(ser):
     ser.close()
-
+ 
 def get_bit(x,n):
     if (x & 2**n != 0):
         return 1
     else:
         return 0
-
-def get_byte(map, val, row, column):
-        map[row][column] = get_bit(val,0)
-        map[row][column+1] = get_bit(val,1)
-        map[row][column+2] = get_bit(val,2)
-        map[row][column+3] = get_bit(val,3)
-        map[row][column+4] = get_bit(val,4)
-        return map
-
+ 
+def get_byte(driveable, val, row, column):
+        driveable[row][column] = get_bit(val,0)
+        driveable[row][column+1] = get_bit(val,1)
+        driveable[row][column+2] = get_bit(val,2)
+        driveable[row][column+3] = get_bit(val,3)
+        driveable[row][column+4] = get_bit(val,4)
+        return driveable
+ 
 def updateValues(sens, val):
     global u
     global omega1
@@ -82,8 +84,10 @@ def updateValues(sens, val):
     global goal_coord_y
     global xdir
     global ydir
-    global map
+    global driveable
+    global explored
     global ddcorner
+     
     if (sens == 255):
         irsens[0] = val/5.0
     elif (sens == 254):
@@ -116,95 +120,95 @@ def updateValues(sens, val):
     elif(sens == 239):
         driven_distance = val
     elif(sens == 238):
-        map = get_byte(map, val, 0, 0)
+        driveable = get_byte(driveable, val, 0, 0)
     elif(sens == 237):
-        map = get_byte(map, val, 0, 5)
+        driveable = get_byte(driveable, val, 0, 5)
     elif(sens == 236):
-        map = get_byte(map, val, 0, 10)
+        driveable = get_byte(driveable, val, 0, 10)
     elif(sens == 235):
-        map = get_byte(map, val, 1, 0)
+        driveable = get_byte(driveable, val, 1, 0)
     elif(sens == 234):
-        map = get_byte(map, val, 1, 5)
+        driveable = get_byte(driveable, val, 1, 5)
     elif(sens == 233):
-        map = get_byte(map, val, 1, 10)
+        driveable = get_byte(driveable, val, 1, 10)
     elif(sens == 232):
-        map = get_byte(map, val, 2, 0)
+        driveable = get_byte(driveable, val, 2, 0)
     elif(sens == 231):
-        map = get_byte(map, val, 2, 5)
+        driveable = get_byte(driveable, val, 2, 5)
     elif(sens == 230):
-        map = get_byte(map, val, 2, 10)
+        driveable = get_byte(driveable, val, 2, 10)
     elif(sens == 229):
-        map = get_byte(map, val, 3, 0)
+        driveable = get_byte(driveable, val, 3, 0)
     elif(sens == 228):
-        map = get_byte(map, val, 3, 5)
+        driveable = get_byte(driveable, val, 3, 5)
     elif(sens == 227):
-        map = get_byte(map, val, 3, 10)
+        driveable = get_byte(driveable, val, 3, 10)
     elif(sens == 226):
-        map = get_byte(map, val, 4, 0)
+        driveable = get_byte(driveable, val, 4, 0)
     elif(sens == 225):
-        map = get_byte(map, val, 4, 5)
+        driveable = get_byte(driveable, val, 4, 5)
     elif(sens == 224):
-        map = get_byte(map, val, 4, 10)
+        driveable = get_byte(driveable, val, 4, 10)
     elif(sens == 223):
-        map = get_byte(map, val, 5, 0)
+        driveable = get_byte(driveable, val, 5, 0)
     elif(sens == 222):
-        map = get_byte(map, val, 5, 5)
+        driveable = get_byte(driveable, val, 5, 5)
     elif(sens == 221):
-        map = get_byte(map, val, 5, 10)
+        driveable = get_byte(driveable, val, 5, 10)
     elif(sens == 220):
-        map = get_byte(map, val, 6, 0)
+        driveable = get_byte(driveable, val, 6, 0)
     elif(sens == 219):
-        map = get_byte(map, val, 6, 5)
+        driveable = get_byte(driveable, val, 6, 5)
     elif(sens == 218):
-        map = get_byte(map, val, 6, 10)
+        driveable = get_byte(driveable, val, 6, 10)
     elif(sens == 217):
-        map = get_byte(map, val, 7, 0)
+        driveable = get_byte(driveable, val, 7, 0)
     elif(sens == 216):
-        map = get_byte(map, val, 7, 5)
+        driveable = get_byte(driveable, val, 7, 5)
     elif(sens == 215):
-        map = get_byte(map, val, 7, 10)
+        driveable = get_byte(driveable, val, 7, 10)
     elif(sens == 214):
-        map = get_byte(map, val, 8, 0)
+        driveable = get_byte(driveable, val, 8, 0)
     elif(sens == 213):
-        map = get_byte(map, val, 8, 5)
+        driveable = get_byte(driveable, val, 8, 5)
     elif(sens == 212):
-        map = get_byte(map, val, 8, 10)
+        driveable = get_byte(driveable, val, 8, 10)
     elif(sens == 211):
-        map = get_byte(map, val, 9, 0)
+        driveable = get_byte(driveable, val, 9, 0)
     elif(sens == 210):
-        map = get_byte(map, val, 9, 5)
+        driveable = get_byte(driveable, val, 9, 5)
     elif(sens == 209):
-        map = get_byte(map, val, 9, 10)
+        driveable = get_byte(driveable, val, 9, 10)
     elif(sens == 208):
-        map = get_byte(map, val, 10, 0)
+        driveable = get_byte(driveable, val, 10, 0)
     elif(sens == 207):
-        map = get_byte(map, val, 10, 5)
+        driveable = get_byte(driveable, val, 10, 5)
     elif(sens == 206):
-        map = get_byte(map, val, 10, 10)
+        driveable = get_byte(driveable, val, 10, 10)
     elif(sens == 205):
-        map = get_byte(map, val, 11, 0)
+        driveable = get_byte(driveable, val, 11, 0)
     elif(sens == 204):
-        map = get_byte(map, val, 11, 5)
+        driveable = get_byte(driveable, val, 11, 5)
     elif(sens == 203):
-        map = get_byte(map, val, 11, 10)
+        driveable = get_byte(driveable, val, 11, 10)
     elif(sens == 202):
-        map = get_byte(map, val, 12, 0)
+        driveable = get_byte(driveable, val, 12, 0)
     elif(sens == 201):
-        map = get_byte(map, val, 12, 5)
+        driveable = get_byte(driveable, val, 12, 5)
     elif(sens == 200):
-        map = get_byte(map, val, 12, 10)
+        driveable = get_byte(driveable, val, 12, 10)
     elif(sens == 199):
-        map = get_byte(map, val, 13, 0)
+        driveable = get_byte(driveable, val, 13, 0)
     elif(sens == 198):
-        map = get_byte(map, val, 13, 5)
+        driveable = get_byte(driveable, val, 13, 5)
     elif(sens == 197):
-        map = get_byte(map, val, 13, 10)
+        driveable = get_byte(driveable, val, 13, 10)
     elif(sens == 196):
-        map = get_byte(map, val, 14, 0)
+        driveable = get_byte(driveable, val, 14, 0)
     elif(sens == 195):
-        map = get_byte(map, val, 14, 5)
+        driveable = get_byte(driveable, val, 14, 5)
     elif(sens == 194):
-        map = get_byte(map, val, 14, 10)
+        driveable = get_byte(driveable, val, 14, 10)
     elif(sens == 176):
         command = val
     elif(sens == 177):
@@ -220,18 +224,108 @@ def updateValues(sens, val):
         goal_coord_y = val
     elif (sens == 241):
         goal_coord_x = val
-        
-
-
-
-        
+    elif(sens == 174):
+        explored = get_byte(explored, val, 0, 0)
+    elif(sens == 173):
+        explored = get_byte(explored, val, 0, 5)
+    elif(sens == 172):
+        explored = get_byte(explored, val, 0, 10)
+    elif(sens == 171):
+        explored = get_byte(explored, val, 1, 0)
+    elif(sens == 170):
+        explored = get_byte(explored, val, 1, 5)
+    elif(sens == 169):
+        explored = get_byte(explored, val, 1, 10)
+    elif(sens == 168):
+        explored = get_byte(explored, val, 2, 0)
+    elif(sens == 167):
+        explored = get_byte(explored, val, 2, 5)
+    elif(sens == 166):
+        explored = get_byte(explored, val, 2, 10)
+    elif(sens == 165):
+        explored = get_byte(explored, val, 3, 0)
+    elif(sens == 164):
+        explored = get_byte(explored, val, 3, 5)
+    elif(sens == 163):
+        explored = get_byte(explored, val, 3, 10)
+    elif(sens == 162):
+        explored = get_byte(explored, val, 4, 0)
+    elif(sens == 161):
+        explored = get_byte(explored, val, 4, 5)
+    elif(sens == 160):
+        explored = get_byte(explored, val, 4, 10)
+    elif(sens == 159):
+        explored = get_byte(explored, val, 5, 0)
+    elif(sens == 158):
+        explored = get_byte(explored, val, 5, 5)
+    elif(sens == 157):
+        explored = get_byte(explored, val, 5, 10)
+    elif(sens == 156):
+        explored = get_byte(explored, val, 6, 0)
+    elif(sens == 154):
+        explored = get_byte(explored, val, 6, 5)
+    elif(sens == 153):
+        explored = get_byte(explored, val, 6, 10)
+    elif(sens == 152):
+        explored = get_byte(explored, val, 7, 0)
+    elif(sens == 151):
+        explored = get_byte(explored, val, 7, 5)
+    elif(sens == 150):
+        explored = get_byte(explored, val, 7, 10)
+    elif(sens == 149):
+        explored = get_byte(explored, val, 8, 0)
+    elif(sens == 148):
+        explored = get_byte(explored, val, 8, 5)
+    elif(sens == 147):
+        explored = get_byte(explored, val, 8, 10)
+    elif(sens == 146):
+        explored = get_byte(explored, val, 9, 0)
+    elif(sens == 145):
+        explored = get_byte(explored, val, 9, 5)
+    elif(sens == 143):
+        explored = get_byte(explored, val, 9, 10)
+    elif(sens == 142):
+        explored = get_byte(explored, val, 10, 0)
+    elif(sens == 141):
+        explored = get_byte(explored, val, 10, 5)
+    elif(sens == 140):
+        explored = get_byte(explored, val, 10, 10)
+    elif(sens == 139):
+        explored = get_byte(explored, val, 11, 0)
+    elif(sens == 138):
+        explored = get_byte(explored, val, 11, 5)
+    elif(sens == 137):
+        explored = get_byte(explored, val, 11, 10)
+    elif(sens == 136):
+        explored = get_byte(explored, val, 12, 0)
+    elif(sens == 135):
+        explored = get_byte(explored, val, 12, 5)
+    elif(sens == 134):
+        explored = get_byte(explored, val, 12, 10)
+    elif(sens == 133):
+        explored = get_byte(explored, val, 13, 0)
+    elif(sens == 132):
+        explored = get_byte(explored, val, 13, 5)
+    elif(sens == 131):
+        explored = get_byte(explored, val, 13, 10)
+    elif(sens == 130):
+        explored = get_byte(explored, val, 14, 0)
+    elif(sens == 129):
+        explored = get_byte(explored, val, 14, 5)
+    elif(sens == 128):
+        explored = get_byte(explored, val, 14, 10)
+         
+ 
+ 
+ 
+         
     else:
         pass
         #print "Not ir- or r-sensor."
-
+ 
 '''def printSens():
-    print "right back: ", irsens[0], "right front: ", irsens[1], "\nfront: ", irsens[2], "\nleft back: ", irsens[4], "left front: ", irsens[3], 
-    print "\Bak = ", omega2
+    print "right back: ", irsens[0], "right front: ", irsens[1], "nfront: ", irsens[2], "nleft back: ", irsens[4], "left front: ", irsens[3], 
+    print "Bak = ", omega2
     print "Hjul: ", hjul, "Mål: ", rsens[1]
     print "u =", u
     print "inWaiting: ", ser.inWaiting()
@@ -239,31 +333,31 @@ def updateValues(sens, val):
     print "Possible directions :", directions
     print "Körd sträcka: ", driven_distance
     for x in range(0,15):
-        print map[x]
+        print driveable[x]
     print "-----------------------"
     '''
-
+ 
 def printSens():
-    print "\n\n\n\n"\
-          "-----------------------------------------------------------------------------------------", "\n", \
-          map[:][14], " " , map[14],  "            Front: ", irsens[2], "\n", \
-          map[:][13], " " , map[13],  "    Left front:  ", irsens[3], " | Right front: ", irsens[1], "\n",  \
-          map[:][12], " " , map[12],  "    Left back:  ",  irsens[4], " | Right back: ", irsens[0], "\n", \
-          map[:][11], " " , map[11],  "            Back: ", omega2,  "\n", \
-          map[:][10], " " , map[10],  "\n", \
-          map[:][9], " " , map[9],  "    Hjul:       ", hjul,            " | Mal:         ", rsens[1],  "\n",  \
-          map[:][8], " " , map[8],  "    \inWaiting   ", ser.inWaiting(), " | u:           ", u, "\n", \
-          map[:][7], " " , map[7],  "", "\n", \
-          map[:][6], " " , map[6],  "    Possible directions: ", directions, "\n", \
-          map[:][5], " " , map[5],  "    Driven_distance: ", driven_distance, "|    ddc: ", ddcorner, "\n", \
-          map[:][4], " ", map[4], "    Command: ", command, "\n", \
-          map[:][3], " ", map[3], "", "\n", \
-          map[:][2], " ", map[2], "        FWALL:             pos: (", robo_pos_x, ", ", robo_pos_y, ")", "\n", \
-          map[:][1], " ", map[1], "    LWALL: ", "  RWALL:     x,y-dir: (", xdir, ", ", ydir, ")", "\n", \
-          map[:][0], " ", map[0], "        BWALL: ",  "Goal position: (", goal_coord_x,",", goal_coord_y, ")", "\n", \
+    print "nnnn"
+          "-----------------------------------------------------------------------------------------", "n", 
+          driveable[:][14], " " , explored[:][14],  "            Front: ", irsens[2], "n", 
+          driveable[:][13], " " , explored[:][13],  "    Left front:  ", irsens[3], " | Right front: ", irsens[1], "n",  
+          driveable[:][12], " " , explored[:][12],  "    Left back:  ",  irsens[4], " | Right back: ", irsens[0], "n", 
+          driveable[:][11], " " , explored[:][11],  "            Back: ", omega2,  "n", 
+          driveable[:][10], " " , explored[:][10],  "n", 
+          driveable[:][9], " " , explored[:][9],  "    Hjul:       ", hjul,            " | Mal:         ", rsens[1],  "n",  
+          driveable[:][8], " " , explored[:][8],  "    inWaiting   ", ser.inWaiting(), " | u:           ", u, "n", 
+          driveable[:][7], " " , explored[:][7],  "", "n", 
+          driveable[:][6], " " , explored[:][6],  "    Possible directions: ", directions, "n", 
+          driveable[:][5], " " , explored[:][5],  "    Driven_distance: ", driven_distance, "|    ddc: ", ddcorner, "n", 
+          driveable[:][4], " ", explored[:][4], "    Command: ", command, "n", 
+          driveable[:][3], " ", explored[:][3], "", "n", 
+          driveable[:][2], " ", explored[:][2], "        FWALL:             pos: (", robo_pos_x, ", ", robo_pos_y, ")", "n", 
+          driveable[:][1], " ", explored[:][1], "    LWALL: ", "  RWALL:     x,y-dir: (", xdir, ", ", ydir, ")", "n", 
+          driveable[:][0], " ", explored[:][0], "        BWALL: ",  "Goal position: (", goal_coord_x,",", goal_coord_y, ")", "n", 
           "----------------------------------------------------------------------------------------"
-
-    
+ 
+     
 '''
 def BluetoothUpdate(counter):
     time.sleep(0.0001)
@@ -271,12 +365,12 @@ def BluetoothUpdate(counter):
     temp = ser.read(1)
     #print "!"
     data = []
-
+ 
     if (ser.inWaiting() > 400):
         ser.flushInput()                                     
     for i in range(0, len(temp)):
         data.append(ord(temp[i]))
-    
+     
     if (len(data) == 1):
         #print "Hej"
         time.sleep(0.0000001)
@@ -292,7 +386,7 @@ def BluetoothUpdate(counter):
     if (counter == 49999):
         printSens()
 '''
-
+ 
 '''
 def BluetoothUpdate(counter):
     time.sleep(0.0001)
@@ -301,10 +395,10 @@ def BluetoothUpdate(counter):
     data = []
     for i in range(0, len(temp)):
         data.append(ord(temp[i]))
-    
+     
     if (ser.inWaiting() > 400):
         ser.flushInput()                                     
-  
+   
     if (len(data) == ):
         time.sleep(0.0000001)
         if (data[0] >= 220):
@@ -315,7 +409,7 @@ def BluetoothUpdate(counter):
         pass
         printSens()
 '''
-
+ 
 def BluetoothUpdate(counter):
     time.sleep(0.0001)
     #print ser.inWaiting()
@@ -326,20 +420,20 @@ def BluetoothUpdate(counter):
             data = []
             for i in range(0, len(temp)):
                 data.append(ord(temp[i]))
-          
+           
             if (len(data) == 2 ):
                 time.sleep(0.0000001)
                 updateValues(data[0], data[1])
-                
+                 
     if (counter == 19999):
         printSens()
-      
+       
     if (ser.inWaiting() > 1000):
         ser.flushInput()
-        
+         
 while(1):
     BluetoothUpdate(counter)
     counter+=1
     if counter == 20000:
         counter = 0
-    
+     
