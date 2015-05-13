@@ -168,7 +168,7 @@ void mission_phase_1(); // Explore the maze
 void set_claw_gap(unsigned char new_gap_percentage); // KLO
 void open_claw_gap(); // KLO
 void close_claw_gap(); // KLO
-
+void exploring_mode();
 
 // FUNCTIONS FOR SINGLE BIT MANIPULATION: ------------------------
 #define bit_get(p,m) ((p) & (m))
@@ -211,11 +211,11 @@ void close_claw_gap(); // KLO
 int main(void)
 {
     init_control_module();
-	sei();
+//	sei();
 	
     // To make the robot stand still when turned on:
 	
-    if (autonomous_mode == 1)
+/*    if (autonomous_mode == 1)
     {
 		while(distance_front < FRONT_MAX_DISTANCE)
 		{
@@ -224,24 +224,38 @@ int main(void)
 		
 		stop();
     }
+*/
+//	set_claw_gap(50); // KLO
+		
 
-	set_claw_gap(0); // KLO
-	
     for(;;)
     {
 		// KLO:
-		/*
-		for (int i=0; i<100; i++)
-		{
-			_delay_ms(50);
-		}
+	
+	
+	
+	exploring_mode();
+	
+	for (int i=0; i<100; i++)
+	{
+		_delay_ms(10);
+		
+	}
+	/*	
 		open_claw_gap();
-		for (int i=0; i<100; i++)
-		{
-			_delay_ms(50);
-		}
-		close_claw_gap();
-		*/
+	
+	for (int i=0; i<100; i++)
+	{
+		_delay_ms(10);
+		
+	}
+	*/
+	close_claw_gap();
+	for (int i=0; i<100; i++)
+	{
+		_delay_ms(10);
+		
+	}
 		/*
 		if (autonomous_mode == 1)
 		{
@@ -298,7 +312,7 @@ void init_control_module(void)
     SPCR = (1<<SPIE)|(1<<SPE)|(0<<DORD)|(0<<MSTR)|(0<<CPOL)|(0<<CPHA);
     DDRB = (1<<DDB6)|(1<<DDB3);
     PINB = (0<<PINB4);
-    
+
     // IRQ1 and IRQ0 activated on rising edge
     EICRA = (1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
     // Enable IRQ1 and IRQ0
@@ -322,10 +336,11 @@ void init_control_module(void)
     // Gripping arm
 	ICR1 = 0x00FF;
     TCCR1A = (1<<COM1A1)|(0<<COM1A0)|(1<<COM1B1)|(0<<COM1B0)|(1<<WGM11)|(0<<WGM10); // KLO
-	TCCR1B = (1<<WGM13)|(1<<WGM12)|(0<<CS12)|(1<<CS11)|(1<<CS10); // KLO
+	TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS12)|(0<<CS11)|(1<<CS10); // KLO
+	
 	// Motor:
 	TCCR2A = (1<<WGM21)| (1<<WGM20) | (1<<COM2A1) | (0<<COM2A0) | (1<<COM2B1) | (0<<COM2B0);
-    TCCR2B = (0<<WGM22) | (0<<CS22) | (1<<CS21) | (1<<CS20);
+	TCCR2B = (0<<WGM22) | (0<<CS22) | (1<<CS21) | (1<<CS20);
     
     OCR1A = 0; // KLO
     OCR1B = 0; // KLO
@@ -1393,16 +1408,25 @@ void mission_phase_1() //Explore the maze
 // Functions for the gap:
 void set_claw_gap(unsigned char new_gap_percentage) // KLO
 {
-	if (new_gap_percentage <= 100 && new_gap_percentage >= 0)
+	if (new_gap_percentage <= 10 && new_gap_percentage >= 4)
 	{
-		OCR1B = round(255*new_gap_percentage/100);
+
+	OCR1B = round(255*new_gap_percentage/100);
 	}
 }
 void open_claw_gap() // KLO
 {
-	set_claw_gap(40);
+	OCR1B = 0x0010;
+	
 }
 void close_claw_gap() // KLO{
 {
-	set_claw_gap(20);
+	
+	OCR1B = 0x0040;
 }
+
+void exploring_mode(){
+	OCR1A = 0x0090;
+	OCR1B = 0x0010;
+	
+	}
