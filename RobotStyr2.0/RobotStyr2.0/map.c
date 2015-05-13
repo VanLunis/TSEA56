@@ -202,25 +202,33 @@ void update_map(){
     
     // END OF MAP SHIFT
     
-	int lx = x-ydir;
-	int ly = y+xdir;
+	int8_t lx = x-ydir;
+	int8_t ly = y+xdir;
 	
 	//analog to lx/ly for right cell
-	int rx = x+ydir;
-	int ry = y-xdir;
+	int8_t rx = x+ydir;
+	int8_t ry = y-xdir;
 	
 	//forward cell
-	int fx = x+xdir;
-	int fy = y+ydir;
+	int8_t fx = x+xdir;
+	int8_t fy = y+ydir;
 	
-	
-    explored[lx][ly] = 1;
-    explored[fx][fy] = 1;
-    explored[rx][ry] = 1;
-    explored[x][y] = 1;
     driveable[x][y] = 1;
-    
-    
+	explored[x][y] = 1;
+	
+	if (!lwall)
+	{
+		driveable[lx][ly] = 1;
+	}
+	if (!fwall)
+	{
+		driveable[fx][fy] = 1;	
+	}
+	if (!rwall)
+	{
+		driveable[rx][ry] = 1;
+	}
+
 }
 /*
  void print_driveable()

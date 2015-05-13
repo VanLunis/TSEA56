@@ -136,21 +136,12 @@ void turn_forward();
 void turn_back();
 void turn_back_control_on_both_walls();
 
-//// OBS: ADDED, NOT TESTED /////////////////////////////
-void turn_back_control_on_left_wall();
-void turn_back_control_on_right_wall();
-void turn_back_control_on_zero_walls();
-void turn_back_control_on_back_wall();
-//// END ADDED, NOT TESTED //////////////////////////////
-
 // Turn left:
 void turn_left();
 void turn_left_control_on_right_wall();
-
-//// OBS: ADDED, NOT TESTED /////////////////////////////
 void turn_left_control_on_zero_walls();
 void turn_left_control_on_back_wall();
-//// END ADDED, NOT TESTED //////////////////////////////
+
 
 // Turn right:
 void turn_right();
@@ -998,8 +989,6 @@ void turn_left_control_on_right_wall()
     _delay_ms(50);
     _delay_ms(50);
 }
-
-//// OBS: ADDED, NOT TESTED /////////////////////////////
 void turn_left_control_on_zero_walls()
 {
     stop();
@@ -1066,7 +1055,7 @@ void turn_left_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
 }
-//// END ADDED, NOT TESTED //////////////////////////////
+
 
 // Turn right:
 void turn_right()
@@ -1257,22 +1246,50 @@ unsigned char get_possible_directions()
 }
 void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
 {
-    
-    if (driven_distance > 10)
-    {
-        update_position();// TEST TEST
-        update_map();
-        send_driveable();
-		send_explored();
-    }
     unsigned char possible_directions = get_possible_directions();
-
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
-    driven_distance = 0;
-    
-    // TODO: Implement the actual algorithm we want to use
-    in_turn = 1;
 	
+	if (driven_distance > 10)
+	{
+		update_position();// TEST TEST
+	}
+	
+	update_map();
+	send_driveable();
+	send_explored();
+	 
+	int8_t lx = x-ydir;
+	int8_t ly = y+xdir;
+	    
+	int8_t rx = x+ydir;
+	int8_t ry = y-xdir;
+	    
+	int8_t fx = x+xdir;
+	int8_t fy = y+ydir;
+	    
+	
+	if (!lwall && !explored[lx][ly])
+	{
+		unvisited[un].x = lx;
+		unvisited[un].y = ly;
+		un++;
+	}
+	if (!fwall && !explored[fx][fy])
+	{
+		unvisited[un].x = fx;
+		unvisited[un].y =  fy;
+		un++;
+	}
+	if (!rwall && !explored[rx][ry])
+	{
+		unvisited[un].x =  rx;
+		unvisited[un].y =  ry;
+		un++;
+	}
+	add_to_buffer(&send_buffer, 0x80, (char)un);
+	
+	in_turn = 1;
+	driven_distance = 0;
 	if (!rwall)
 	{
 		turn_right();
@@ -1293,7 +1310,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     in_turn = 0;
     driven_distance = 0;
     
-    //	send_driveable();
+    //	send_driveable();g
     
     turn_forward();
     
@@ -1308,16 +1325,15 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 void update_driven_distance(){
     if (!in_turn)
     {
-        if (wheel_click == 1 && wheel_click_prior == 0)
+		if (wheel_click == 1 && wheel_click_prior == 0)
         {
             driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
             
             if (driven_distance >= 20)
             {
-                
                 driven_distance = 0;
                 update_position();
-                update_map();
+				update_map();
                 send_driveable();
 				send_explored();
                 add_to_buffer(&send_buffer, 0xB1, (char) x);
@@ -1333,10 +1349,9 @@ void update_driven_distance(){
             
             if (driven_distance >= 20)
             {
-                
                 driven_distance = 0;
                 update_position();
-                update_map();
+				update_map();
                 send_driveable();
 				send_explored();
                 add_to_buffer(&send_buffer, 0xB1, (char) x);
@@ -1354,8 +1369,6 @@ void mission_phase_1() //Explore the maze
 {
     update_sensors_and_empty_receive_buffer();
     
-    
-    
     // In a straight corridor?:
     if(distance_front > FRONT_MAX_DISTANCE) // front > 13
     {
@@ -1366,7 +1379,8 @@ void mission_phase_1() //Explore the maze
     // In some kind of turn or crossing:
     else // front < 13
     {		
-        // Stop, check directions and decide which way to go:      
+        // Stop, check directions and decide which way to go:
+		stop();      
         make_direction_decision();
     }
     if (distance_front > 30 && distance_back > 30 &&
@@ -1374,6 +1388,7 @@ void mission_phase_1() //Explore the maze
          (distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
          (distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
     {
+		stop(); 
         make_direction_decision();
     }
     

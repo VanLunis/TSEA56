@@ -1,10 +1,11 @@
 #include "shortest_path.h"
 #include "map.h" 
 
-int c = 0;
+int8_t c = 0;
+int8_t un = 0;
 
 void getCommands(point end){
-	int direction = 0;
+	int8_t direction = 0;
 	
 	if (xdir == 0 && ydir == 1)
 	{
@@ -136,10 +137,10 @@ void getCommands(point end){
     }
 }
 
-void traceBack(int costmap[17][17], point end)
+void traceBack(int8_t costmap[17][17], point end)
 {
     //Distance is equal to cost
-    int cost = costmap[end.x][end.y];
+    int8_t cost = costmap[end.x][end.y];
     //printf("COST for end: %i", cost);
     //point path[cost];
     point p = end;
@@ -200,11 +201,11 @@ void floodfill(point start, point end)
         }
     }
     //printf(" (%i, %i), (%i, %i)", start.x, start.y, end.x, end.y);
-    int notfinished = 1;
+    int8_t notfinished = 1;
     point c = start;
-    int q = 0;
-    int cost = 0;
-    int i = 0;
+    int8_t q = 0;
+    int8_t cost = 0;
+    int8_t i = 0;
     point queue[50];
     point temp;
     for (int k = 0; k < 50; k++){
@@ -214,8 +215,8 @@ void floodfill(point start, point end)
 
     }
 
-    int getcost(point p){
-        int lcost = 255;
+    int8_t getcost(point p){
+        uint8_t lcost = 255;
         //WEST
         if (p.x > 0){
             if (costmap[p.x-1][p.y] < lcost){
@@ -248,7 +249,7 @@ void floodfill(point start, point end)
         return lcost;
     }
 
-    void fill_square(point p, int cost)
+    void fill_square(point p, int8_t cost)
     {
         //printf("x:%i y:%i%",p.x, p.y);
         point temp;

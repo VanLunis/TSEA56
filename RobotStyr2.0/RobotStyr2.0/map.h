@@ -18,7 +18,7 @@ int8_t lwall;
 //Origin is the upper left element.
 int driveable[MAP_SIZE][MAP_SIZE];
 int explored[MAP_SIZE][MAP_SIZE];
-int costmap[MAP_SIZE][MAP_SIZE];
+uint8_t costmap[MAP_SIZE][MAP_SIZE];
 
 //int start[2];
 

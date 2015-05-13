@@ -4,22 +4,22 @@
 
 typedef struct point
 {
-    int x;
-    int y;
+    int8_t x;
+    int8_t y;
 } point;
 
 unsigned char command[50];
-int c;
+int8_t c;
 point end;
 point path[50];
 point unvisited[50];
-int un;
+int8_t un;
 
 void fill_square(point p, int cost);
 
 void getCommands(point end);
 
-void traceBack(int costmap[17][17], point end);
+void traceBack(int8_t costmap[17][17], point end);
 
 void floodfill(point start, point end);
 #endif
