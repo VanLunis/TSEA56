@@ -70,12 +70,10 @@ unsigned char distance_back = 0;
 
 // Driven distance variables
 unsigned char driven_distance = 5; //drives too far when turned on
-unsigned char test_total_driven_distance = 0; // TEST TEST
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
 unsigned char in_turn = 0;
 unsigned char goal_detected = 0;
-unsigned char square_counter = 0;
 
 // Initiates control variables
 double e = 0; // Position error
@@ -476,20 +474,21 @@ void update_values_from_sensor(){
                             _delay_ms(100);
                         }
                         
+						goalx = x + xdir;
+						goaly = y + ydir;
+						/*
                         if (driven_distance > 10)
                         {
-                            goal[0] = x + xdir;
-                            goal[1] = y + ydir;
+                            goalx = x + xdir;
+                            goaly = y + ydir;
                         }
                         else
                         {
-                            goal[0] = x;
-                            goal[1] = y;
-                        }
+                            goalx = x;
+                            goaly = y;
+                        }*/
                     }
                 }
-                add_to_buffer(&send_buffer,0xF1,goal[0]);
-                add_to_buffer(&send_buffer,0xF2,goal[1]);
                 break;
                 
         } // end of switch
@@ -671,9 +670,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, *ptr_alpha, *ptr_e_prior, *ptr_alpha_prior, *ptr_e_prior_prior,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1,(char) *ptr_alpha);
-        //add_to_buffer(&send_buffer,0xF0,(char) *ptr_e);
         
         // updates values for PD:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -688,8 +684,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(0, *ptr_alpha, 0, *ptr_alpha_prior, 0,  *ptr_alpha_prior_prior);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -705,8 +699,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -722,8 +714,6 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
         double u = controller(*ptr_e, 0, *ptr_e_prior, 0, *ptr_e_prior_prior,  0);
         setMotor(u,*ptr_alpha);
         u = (char) u;
-        //add_to_buffer(&send_buffer,0xF2,u);
-        //add_to_buffer(&send_buffer,0xF1, (char) *ptr_alpha);
         
         // updates values for derivative:
         *ptr_e_prior_prior = *ptr_e_prior;
@@ -1207,18 +1197,15 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     
     if (driven_distance > 10)
     {
-        square_counter++;
         update_position();// TEST TEST
         update_map();
         send_map(driveable);
     }
     unsigned char possible_directions = get_possible_directions();
-    //add_to_buffer(&send_buffer, 0xF6,(char) square_counter);
+
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
     driven_distance = 0;
-    test_total_driven_distance = 0;
     
-    square_counter = 0;
     // TODO: Implement the actual algorithm we want to use
     in_turn = 1;
     if(possible_directions == 0x01)// dead end
@@ -1252,7 +1239,6 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     }
     in_turn = 0;
     driven_distance = 0;
-    test_total_driven_distance = 0;
     
     //	send_map(driveable);
     
@@ -1262,6 +1248,8 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     add_to_buffer(&send_buffer, 0xB2, (char) y);
     add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
     add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+	add_to_buffer(&send_buffer,0xF1,(char)goalx);
+	add_to_buffer(&send_buffer,0xF2,(char)goaly);
     
 }
 void update_driven_distance(){
@@ -1270,8 +1258,6 @@ void update_driven_distance(){
         if (wheel_click == 1 && wheel_click_prior == 0)
         {
             driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-            test_total_driven_distance = test_total_driven_distance + WHEEL_CLICK_DISTANCE; // TEST TEST
-            add_to_buffer(&send_buffer,0xEF, (char) test_total_driven_distance); // TEST TEST
             
             if (driven_distance >= 20)
             {
@@ -1284,14 +1270,12 @@ void update_driven_distance(){
                 add_to_buffer(&send_buffer, 0xB2, (char) y);
                 add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
                 add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-                
-                //add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
+				add_to_buffer(&send_buffer,0xF1,(char)goalx);
+				add_to_buffer(&send_buffer,0xF2,(char)goaly);
             }
         }
         else if (wheel_click == 0 && wheel_click_prior == 1)
         {
-            test_total_driven_distance = test_total_driven_distance + WHEEL_CLICK_DISTANCE; // TEST TEST
-            //add_to_buffer(&send_buffer,0xEF, (char) test_total_driven_distance); // TEST TEST
             
             if (driven_distance >= 20)
             {
@@ -1304,7 +1288,8 @@ void update_driven_distance(){
                 add_to_buffer(&send_buffer, 0xB2, (char) y);
                 add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
                 add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-                //add_to_buffer(&send_buffer, 0xF6, (char) ++square_counter);
+				add_to_buffer(&send_buffer,0xF1,(char)goalx);
+				add_to_buffer(&send_buffer,0xF2,(char)goaly);
             }
         }
         wheel_click_prior = wheel_click;

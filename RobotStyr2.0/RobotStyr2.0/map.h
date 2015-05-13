@@ -9,7 +9,8 @@ int8_t x;
 int8_t y;
 int8_t xdir;
 int8_t ydir;
-int goal[2];
+int8_t goalx;
+int8_t goaly;
 
 //Origin is the upper left element.
 int driveable[MAP_SIZE][MAP_SIZE];
