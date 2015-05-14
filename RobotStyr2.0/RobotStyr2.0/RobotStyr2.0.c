@@ -73,7 +73,6 @@ unsigned char distance_back = 0;
 unsigned char driven_distance = 5; //drives too far when turned on
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
-unsigned char in_turn = 0;
 unsigned char goal_detected = 0;
 
 // Initiates control variables
@@ -1254,8 +1253,11 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 		update_position();// TEST TEST
 	}
 	
+	in_turn = 1;
+	driven_distance = 0;
+	
 	update_map();
-	send_driveable();
+	//send_driveable();
 	send_explored();
 	 
 	int8_t lx = x-ydir;
@@ -1286,10 +1288,15 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 		unvisited[un].y =  ry;
 		un++;
 	}
-	add_to_buffer(&send_buffer, 0x80, (char)un);
 	
-	in_turn = 1;
-	driven_distance = 0;
+	add_to_buffer(&send_buffer, 0xB1, (char) x);
+	add_to_buffer(&send_buffer, 0xB2, (char) y);
+	add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
+	add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+	add_to_buffer(&send_buffer, 0xF1, (char) goalx);
+	add_to_buffer(&send_buffer, 0xF2, (char) goaly);
+	add_to_buffer(&send_buffer, 0x70, (char) un);
+	
 	if (!rwall)
 	{
 		turn_right();
@@ -1310,16 +1317,9 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     in_turn = 0;
     driven_distance = 0;
     
-    //	send_driveable();g
+    //	send_driveable();
     
     turn_forward();
-    
-    add_to_buffer(&send_buffer, 0xB1, (char) x);
-    add_to_buffer(&send_buffer, 0xB2, (char) y);
-    add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-    add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-	add_to_buffer(&send_buffer,0xF1,(char)goalx);
-	add_to_buffer(&send_buffer,0xF2,(char)goaly);
     
 }
 void update_driven_distance(){
@@ -1334,14 +1334,12 @@ void update_driven_distance(){
                 driven_distance = 0;
                 update_position();
 				update_map();
-                send_driveable();
-				send_explored();
                 add_to_buffer(&send_buffer, 0xB1, (char) x);
                 add_to_buffer(&send_buffer, 0xB2, (char) y);
-                add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-                add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-				add_to_buffer(&send_buffer,0xF1,(char)goalx);
-				add_to_buffer(&send_buffer,0xF2,(char)goaly);
+                //add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
+                //add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+				//add_to_buffer(&send_buffer,0xF1, (char) goalx);
+				//add_to_buffer(&send_buffer,0xF2, (char) goaly);
             }
         }
         else if (wheel_click == 0 && wheel_click_prior == 1)
@@ -1352,14 +1350,12 @@ void update_driven_distance(){
                 driven_distance = 0;
                 update_position();
 				update_map();
-                send_driveable();
-				send_explored();
                 add_to_buffer(&send_buffer, 0xB1, (char) x);
                 add_to_buffer(&send_buffer, 0xB2, (char) y);
-                add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-                add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-				add_to_buffer(&send_buffer,0xF1,(char)goalx);
-				add_to_buffer(&send_buffer,0xF2,(char)goaly);
+                //add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
+                //add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
+				//add_to_buffer(&send_buffer,0xF1, (char) goalx);
+				//add_to_buffer(&send_buffer,0xF2, (char) goaly);
             }
         }
         wheel_click_prior = wheel_click;
@@ -1382,6 +1378,7 @@ void mission_phase_1() //Explore the maze
         // Stop, check directions and decide which way to go:
 		stop();      
         make_direction_decision();
+		
     }
     if (distance_front > 30 && distance_back > 30 &&
         ((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||

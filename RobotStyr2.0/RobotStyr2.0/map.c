@@ -11,6 +11,8 @@ int8_t fwall = 0;
 int8_t rwall = 0;
 int8_t lwall = 0;
 
+unsigned char in_turn = 0;
+
 
 //Shifts the elements up. (Keep in mind that lower left corner is the origin)
 //Loops through the map from top to bottom and shifts stuff up. Replaced bottom with zeros.
@@ -177,7 +179,8 @@ void update_position(){
     y = y + ydir;
 }
 
-void update_map(){
+void update_map()
+{
     
 	// added map shift function. PLACED WRONG?
 	if (y == MAP_SIZE - 1)
@@ -216,17 +219,20 @@ void update_map(){
     driveable[x][y] = 1;
 	explored[x][y] = 1;
 	
-	if (!lwall)
+	if(in_turn)
 	{
-		driveable[lx][ly] = 1;
-	}
-	if (!fwall)
-	{
-		driveable[fx][fy] = 1;	
-	}
-	if (!rwall)
-	{
-		driveable[rx][ry] = 1;
+		if (!lwall)
+		{
+			driveable[lx][ly] = 1;
+		}
+		if (!fwall)
+		{
+			driveable[fx][fy] = 1;
+		}
+		if (!rwall)
+		{
+			driveable[rx][ry] = 1;
+		}		
 	}
 
 }

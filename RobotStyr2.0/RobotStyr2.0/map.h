@@ -15,6 +15,8 @@ int8_t fwall;
 int8_t rwall;
 int8_t lwall;
 
+unsigned char in_turn;
+
 //Origin is the upper left element.
 int driveable[MAP_SIZE][MAP_SIZE];
 int explored[MAP_SIZE][MAP_SIZE];
