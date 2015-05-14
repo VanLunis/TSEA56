@@ -3,131 +3,139 @@
 
 int8_t c = 0;
 int8_t un = 0;
+int8_t tmplx;
+int8_t tmply;
+int8_t tmprx;
+int8_t tmpry;
 
 void getCommands(point end){
-	int8_t direction = 0;
-	
-	if (xdir == 0 && ydir == 1)
-	{
-		direction = 0;
-	}
-	else if (xdir ==1 && ydir == 0)
-	{
-		direction = 1;	
-	}
-	else if (xdir == 0 && ydir == -1)
-	{
-		direction = 2;
-	}
-	else if (xdir == -1 && ydir == 0)
-	{
-		direction = 3;
-	}
+	int8_t tmpxdir = xdir;
+	int8_t tmpydir = ydir;
 	
     for (int i=0; i < costmap[end.x][end.y]; i++)
     {
+		tmplx = path[i].x - tmpydir;
+		tmply = path[i].y + tmpxdir;
+		tmprx = path[i].x + tmpydir;
+		tmpry = path[i].y - tmpxdir;
            
+			//GO EAST 
             if(path[i].x < path[i+1].x)
             {
 
-                if(direction==0){
+                if(tmpxdir == 0 && tmpydir == 1){
                   //  printf("Turn right, ");
                     command[c] = 'r';
                     c++;
 
                 }
-                else if(direction==2){
+                else if(tmpxdir == 0 && tmpydir == -1){
                    // printf("Turn left, ");
                     command[c] = 'l';
                     c++;
 
                 }
-				else if(direction == 3)
+				else if(tmpxdir == -1 && tmpydir == 0)
 				{
 					//Turn back
 					command[c] = 'b';
 					c++;
 				}
             //    printf("Go forwards.\n");
-                command[c] = 'f';
-                c++;
-                direction = 1;
+				if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry])))// In decision node?
+				{
+					command[c] = 'f';
+					c++;
+				}
+				
+                tmpxdir = 1;
+				tmpydir = 0;
 
             }
+			
+			//GO WEST
             else if(path[i].x > path[i+1].x)
             {
-                if(direction==0){
+                if(tmpxdir == 0 && tmpydir == 1){
                 //   printf("Turn left, ");
                     command[c] = 'l';
                     c++;
 
                 }
-                else if(direction==2){
+                else if(tmpxdir == 0 && tmpydir == -1){
              //       printf("Turn right, ");
                     command[c] = 'r';
                     c++;
 
                 }
-				else if(direction == 1)
+				else if(tmpxdir == 1 && tmpydir == 0)
 				{
 					//Turn back
 					command[c] = 'b';
 					c++;
 				}
             //    printf("Go forwards!\n");
-                direction=3;
+                
+				tmpxdir = -1;
+				tmpydir = 0;
                 command[c] = 'f';
                 c++;
 
             }
+			
+			//GO NORTH
             else if(path[i].y < path[i+1].y)
             {
-                if(direction==1){
+                if(tmpxdir == 1 && tmpydir == 0){
                     //printf("Turn left, ");
                     command[c] = 'l';
                     c++;
 
                 }
-                else if(direction==3){
+                else if(tmpxdir == -1 && tmpydir == 0){
                     //printf("Turn right, ");
                     command[c] = 'r';
                     c++;
 
                 }
-				else if(direction == 2)
+				else if(tmpxdir == 0 && tmpydir == -1)
 				{
 					//Turn back
 					command[c] = 'b';
 					c++;
 				}
              //   printf("Go forwards!\n");
-                direction=0;
+                tmpxdir = 0;
+                tmpydir = 1;
                 command[c] = 'f';
                 c++;
 
             }
+			
+			//GO SOUTH
             else if(path[i].y > path[i+1].y)
             {
-                if(direction==1){
+                if(tmpxdir == 1 && tmpydir == 0){
                   //  printf("Turn right, ");
                     command[c] = 'r';
                     c++;
 
                 }
-                else if(direction==3){
+                else if(tmpxdir == -1 && tmpydir == 0){
                    // printf("Turn left, ");
                     command[c] = 'l';
                     c++;
 
                 }
-				else if(direction == 0)
+				else if(tmpxdir == 0 && tmpydir == 1)
 				{
 					//Turn back
 					command[c] = 'b';
 					c++;
 				}
                // printf("Go forwards!\n");
-                direction=2;
+                tmpxdir = 0;
+                tmpydir = -1;
                 command[c] = 'f';
                 c++;
 
@@ -273,7 +281,6 @@ void floodfill(point start, point end)
             //printf("C: x:%i, y:%i", c.x, c.y);
             if (p.x > 0){
                 if ((driveable[p.x-1][p.y] == 1)
-                        && (explored[p.x-1][p.y] == 1)
                         && (costmap[p.x-1][p.y] > cost+1)){
                     temp.x = p.x - 1;
                    // printf("WEST x:%i y:%i%",p.x, p.y);
@@ -285,7 +292,6 @@ void floodfill(point start, point end)
             //EAST
             if (p.x < 16){
                 if ((driveable[p.x+1][p.y] == 1)
-                        && (explored[p.x+1][p.y] == 1)
                         && (costmap[p.x+1][p.y] > cost+1)){
                    // printf("EAST x:%i y:%i%",p.x, p.y);
                     temp.x = p.x+1;
@@ -299,7 +305,6 @@ void floodfill(point start, point end)
             temp.x = p.x;
             if (p.y > 0){
                 if ((driveable[p.x][p.y-1] == 1)
-                        && (explored[p.x][p.y-1] == 1)
                         && (costmap[p.x][p.y-1] > cost+1)){
                     temp.y = p.y - 1;
                 //    printf("SOUTH x:%i y:%i%",p.x, p.y);
@@ -315,7 +320,6 @@ void floodfill(point start, point end)
 
             if (p.y < 16){
                 if ((driveable[p.x][p.y+1] == 1)
-                        && (explored[p.x][p.y+1] == 1)
                         && (costmap[p.x][p.y+1] > cost+1)){
                //     printf("NORTH - SURPRISE MF x:%i y:%i%",p.x, p.y);
                     temp.y = p.y + 1;
@@ -349,3 +353,4 @@ void floodfill(point start, point end)
     return;
 
 }
+
