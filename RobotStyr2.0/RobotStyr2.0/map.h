@@ -37,7 +37,7 @@ void print_drivable();
 void print_explored();
 void print_costmap();
 
-// SHORTEST PATH
+// SHORTEST PATH //////////////////////////////////
 typedef struct point
 {
 	int8_t x;

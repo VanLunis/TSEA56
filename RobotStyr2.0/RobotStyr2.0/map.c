@@ -13,6 +13,7 @@ int8_t lwall = 0;
 
 unsigned char in_turn = 0;
 
+// OBS: Need to shift path and end as well?!!
 
 //Shifts the elements up. (Keep in mind that lower left corner is the origin)
 //Loops through the map from top to bottom and shifts stuff up. Replaced bottom with zeros.
@@ -35,9 +36,12 @@ void shift_up()
     y++;
 	
 	// unvisited:
-	for(int i=0; i<50; i++)
+	if (un > 0)
 	{
-		unvisited[i].y++; 
+		for(int i=0; i<un; i++)
+		{
+			unvisited[i].y++;
+		}
 	}
 }
 
@@ -61,9 +65,12 @@ void shift_right(){
     x++;
 	
 	// unvisited:
-	for(int i=0; i<50; i++)
+	if(un>0)
 	{
-		unvisited[i].x++;
+		for(int i=0; i<un; i++)
+		{
+			unvisited[i].x++;
+		}	
 	}
 }
 
@@ -86,11 +93,14 @@ void shift_down()
     goaly--;
     y--;
 	// unvisited:
-	for(int i=0; i<50; i++)
+	if(un>0)
 	{
-		unvisited[i].y--;
+		for(int i=0; i<un; i++)
+		{
+			unvisited[i].y--;
+		}
+		return;
 	}
-    return;
 }
 
 void shift_left()
@@ -113,9 +123,12 @@ void shift_left()
     x--;
 	
 	// unvisited:
-	for(int i=0; i<50; i++)
+	if(un>0)
 	{
-		unvisited[i].x--;
+		for(int i=0; i<un; i++)
+		{
+			unvisited[i].x--;
+		}
 	}
     return;
     

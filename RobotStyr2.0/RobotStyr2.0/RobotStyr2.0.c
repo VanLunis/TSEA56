@@ -152,8 +152,10 @@ void turn_right_control_on_back_wall();
 unsigned char get_possible_directions();
 void make_direction_decision();
 void update_driven_distance();
+// Functions for driveable but unvisited positions
 void add_unvisited();
 int8_t unvisited_already_in_list(int8_t,int8_t);
+void check_if_visited_explored();
 
 // MISSION FUNCTIONS: --------------------------------------------
 void mission_phase_1(); // Explore the maze
@@ -1238,9 +1240,9 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	driven_distance = 0;
 	
 	update_map();
-	//send_driveable();
+	check_if_visited_explored(); 
 	send_explored();
-	add_unvisited(); 
+	add_unvisited();
 	
 	add_to_buffer(&send_buffer, 0xB1, (char) x);
 	add_to_buffer(&send_buffer, 0xB2, (char) y);
@@ -1267,13 +1269,14 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 		turn_back();
 	}
 	
-    in_turn = 0;
-    driven_distance = 0;
-    
-    //	send_driveable();
-    
-    turn_forward();
-    
+	in_turn = 0;
+	driven_distance = 0;
+	
+	//	send_driveable();
+	
+	turn_forward();	
+
+	   
 }
 void update_driven_distance()
 {
@@ -1293,6 +1296,7 @@ void update_driven_distance()
         wheel_click_prior = wheel_click;
     }
 }
+// Functions for driveable but unvisited positions
 void add_unvisited()
 {
 	int8_t lx = x-ydir;
@@ -1327,32 +1331,46 @@ void add_unvisited()
 int8_t unvisited_already_in_list(int8_t ux,int8_t uy)
 {
 	int8_t found = 0;
-	for(int i=0; i<50; i++)
+	if (un>0)
 	{
-		if(unvisited[i].x == ux && unvisited[i].y == uy)
+		for(int i=0; i<un; i++)
 		{
-			found = 1;
-			break;
-		}	
+			if(unvisited[i].x == ux && unvisited[i].y == uy)
+			{
+				found = 1;
+				break;
+			}
+		}
 	} 
 	return found;
 }
-
+void check_if_visited_explored()
+{
+	if (un>0)
+	{
+		for(int k=0; k<un; k++)
+		{
+			if(explored[unvisited[k].x][unvisited[k].y] == 1)
+			{
+				un--;
+				if(k < un)
+				{
+					for (int l = k; l < un; l++)
+					{
+						unvisited[l] = unvisited[l+1];
+					}
+				}
+			}
+		}
+	}
+}
 
 // MISSION FUNCTIONS: --------------------------------------------
 void mission_phase_1() //Explore the maze
 {
 	update_sensors_and_empty_receive_buffer();
 	
-	if (distance_front > 30 && distance_back > 30 &&
-	((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-	(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-	(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
-	{
-		stop();
-		make_direction_decision();
-	}
-	else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+	if(distance_front > FRONT_MAX_DISTANCE) // front > 13
 	{
 		// Drive forward:
 		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1361,10 +1379,16 @@ void mission_phase_1() //Explore the maze
 	// In some kind of turn or crossing:
 	else // front < 13
 	{
-		// Stop, check directions and decide which way to go:
+		stop(); // Stop, check directions and decide which way to go:
+		make_direction_decision();	
+	}
+	if (distance_front > 30 && distance_back > 30 &&
+	((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+	(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+	(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+	{
 		stop();
 		make_direction_decision();
-		
 	}
 	
 };
