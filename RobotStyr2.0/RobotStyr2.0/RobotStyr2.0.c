@@ -1324,7 +1324,6 @@ void add_unvisited()
 		un++;
 	}
 }
-
 int8_t unvisited_already_in_list(int8_t ux,int8_t uy)
 {
 	int8_t found = 0;

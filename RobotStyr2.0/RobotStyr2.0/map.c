@@ -33,6 +33,12 @@ void shift_up()
     //start[1]++;
     goaly++;
     y++;
+	
+	// unvisited:
+	for(int i=0; i<50; i++)
+	{
+		unvisited[i].y++; 
+	}
 }
 
 void shift_right(){
@@ -53,6 +59,12 @@ void shift_right(){
     // start[0]++;
     goalx++;
     x++;
+	
+	// unvisited:
+	for(int i=0; i<50; i++)
+	{
+		unvisited[i].x++;
+	}
 }
 
 void shift_down()
@@ -73,6 +85,11 @@ void shift_down()
     //start[1]--;
     goaly--;
     y--;
+	// unvisited:
+	for(int i=0; i<50; i++)
+	{
+		unvisited[i].y--;
+	}
     return;
 }
 
@@ -94,6 +111,12 @@ void shift_left()
     //start[0]--;
     goalx--;
     x--;
+	
+	// unvisited:
+	for(int i=0; i<50; i++)
+	{
+		unvisited[i].x--;
+	}
     return;
     
 }
