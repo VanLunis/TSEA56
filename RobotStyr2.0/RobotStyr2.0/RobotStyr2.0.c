@@ -509,7 +509,6 @@ void update_values_from_sensor(){
             case 0xF9:  // tejp sensor floor:
                 if (goal_detected == 0)
                 {
-                    
                     if (fetch_from_buffer(&receive_buffer).val == 1)
                     {
                         goal_detected = 1;
@@ -522,17 +521,6 @@ void update_values_from_sensor(){
                         
 						goalx = x + xdir;
 						goaly = y + ydir;
-						/*
-                        if (driven_distance > 10)
-                        {
-                            goalx = x + xdir;
-                            goaly = y + ydir;
-                        }
-                        else
-                        {
-                            goalx = x;
-                            goaly = y;
-                        }*/
                     }
                 }
                 break;
@@ -1257,7 +1245,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	driven_distance = 0;
 	
 	update_map();
-	//send_driveable();
+	send_driveable();
 	send_explored();
 	 
 	int8_t lx = x-ydir;
@@ -1322,41 +1310,20 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
     turn_forward();
     
 }
-void update_driven_distance(){
+void update_driven_distance()
+{
     if (!in_turn)
     {
 		if (wheel_click == 1 && wheel_click_prior == 0)
         {
             driven_distance = driven_distance + WHEEL_CLICK_DISTANCE;
-            
-            if (driven_distance >= 20)
-            {
-                driven_distance = 0;
-                update_position();
-				update_map();
-                add_to_buffer(&send_buffer, 0xB1, (char) x);
-                add_to_buffer(&send_buffer, 0xB2, (char) y);
-                //add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-                //add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-				//add_to_buffer(&send_buffer,0xF1, (char) goalx);
-				//add_to_buffer(&send_buffer,0xF2, (char) goaly);
-            }
-        }
-        else if (wheel_click == 0 && wheel_click_prior == 1)
+		}
+		    
+        if (driven_distance >= 20 && (wheel_click ^ wheel_click_prior))
         {
-            
-            if (driven_distance >= 20)
-            {
                 driven_distance = 0;
                 update_position();
 				update_map();
-                add_to_buffer(&send_buffer, 0xB1, (char) x);
-                add_to_buffer(&send_buffer, 0xB2, (char) y);
-                //add_to_buffer(&send_buffer, 0xB3, (char) (xdir + 5)); // +5 since Komm cant send zeroes
-                //add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
-				//add_to_buffer(&send_buffer,0xF1, (char) goalx);
-				//add_to_buffer(&send_buffer,0xF2, (char) goaly);
-            }
         }
         wheel_click_prior = wheel_click;
     }
