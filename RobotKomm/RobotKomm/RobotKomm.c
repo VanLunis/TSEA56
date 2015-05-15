@@ -70,17 +70,21 @@ int main(void)
 		
         if(!buffer_empty(&pc_buffer_from_sensor))
         {
-            /*
-             USART_Transmit(0x00);
-             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
-             if(fetch_from_buffer(&pc_buffer_from_sensor).val == 0x00)
-             {
-             USART_Transmit(0x01);
-             }
-             else
-             {
-             USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
-             }*/
+            counter++;
+			if (counter == 10)
+			{
+				USART_Transmit(0x00);
+				USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
+				if(fetch_from_buffer(&pc_buffer_from_sensor).val == 0x00)
+				{
+					USART_Transmit(0x01);
+				}
+				else
+				{
+					USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).val);
+				}
+				counter = 0;
+			} 
             discard_from_buffer(&pc_buffer_from_sensor);
         }
         

@@ -913,7 +913,6 @@ void turn_left()
     {
         turn_left_control_on_right_wall();
     }
-    //// OBS: ADDED, NOT TESTED /////////////////////////////
     else if(distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
     {
         turn_left_control_on_zero_walls();
@@ -923,8 +922,6 @@ void turn_left()
     {
         turn_left_control_on_back_wall();
     }
-    
-    //// END ADDED, NOT TESTED //////////////////////////////
 }
 void turn_left_control_on_right_wall()
 {
@@ -1265,32 +1262,30 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	add_to_buffer(&send_buffer, 0xF2, (char) goaly);
 	add_to_buffer(&send_buffer, 0x70, (char) un);
 	
-	if (missionPhase == 1)
+	if (!rwall)
 	{
-		if (!rwall)
-		{
-			turn_right();
-		}
-		else if (!fwall)
-		{
-			;
-		}
-		else if(!lwall)
-		{
-			turn_left();
-		}
-		else
-		{
-			turn_back();
-		}
-		
-		in_turn = 0;
-		driven_distance = 0;
-		
-		//	send_driveable();
-		
-		turn_forward();	
-	}	   
+		turn_right();
+	}
+	else if (!fwall)
+	{
+		;
+	}
+	else if(!lwall)
+	{
+		turn_left();
+	}
+	else
+	{
+		turn_back();
+	}
+	
+	in_turn = 0;
+	driven_distance = 0;
+	
+	//	send_driveable();
+	
+	turn_forward();
+		 
 }
 void update_driven_distance()
 {
@@ -1373,6 +1368,10 @@ void check_if_visited_explored()
 					{
 						unvisited[l] = unvisited[l+1];
 					}
+				}
+				else
+				{
+					break;
 				}
 			}
 		}
