@@ -84,9 +84,11 @@ double alpha_prior = 0;
 double e_prior_prior = 0;
 double alpha_prior_prior = 0;
 
-
 // SWITCH:
 volatile int autonomous_mode = 1; // 1 true, 0 false: remote control mode
+
+// MISSION PHASES
+volatile int8_t missionPhase = 0; // 0,1,2,3,4,5 or 6
 
 // FUNCTION DECLARATIONS: ////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
@@ -158,6 +160,8 @@ int8_t unvisited_already_in_list(int8_t,int8_t);
 void check_if_visited_explored();
 
 // MISSION FUNCTIONS: --------------------------------------------
+void mission();
+void mission_phase_0();
 void mission_phase_1(); // Explore the maze
 
 // GRIPPING ARM FUNCTIONS: ---------------------------------------
@@ -206,11 +210,11 @@ void update_orientation(char turn);
 //////////////////////////////////////////////////////////////////////
 
 int main(void)
+
 {
     init_control_module();
     sei();
     init_map();
-    
     
     // To make the robot stand still when turned on:
     
@@ -226,16 +230,21 @@ int main(void)
     
     for(;;)
     {
-        if (autonomous_mode == 1)
+		// In autonomous mode?:
+		if(autonomous_mode == 1 && missionPhase == 0)
         {
-            mission_phase_1();
+			missionPhase = 1; //temporary, don't have phase zero yet
+			mission();
         }
-        
-        // In remote control mode?:
-        else
-        {
-            remote_control_mode();
-        }
+		else if(autonomous_mode == 1)
+		{
+			stop();
+		}
+		// In remote control mode?:
+		else
+		{
+			remote_control_mode();
+		}
     }
     
 }
@@ -505,19 +514,19 @@ void update_values_from_sensor(){
                 
             case 0xFA: // distance driven:
                 wheel_click = fetch_from_buffer(&receive_buffer).val;
-                update_driven_distance();
-                break;
+				update_driven_distance();
+				break;
                 
             case 0xF9:  // tejp sensor floor:
-                if (goal_detected == 0)
-                {
-                    if (fetch_from_buffer(&receive_buffer).val == 1)
-                    {
-                        goal_detected = 1;
+				if (goal_detected == 0)
+				{
+					if (fetch_from_buffer(&receive_buffer).val == 1)
+					{
+						goal_detected = 1;
 						goalx = x + xdir;
 						goaly = y + ydir;
-                    }
-                }
+					}
+				}
                 break;
                 
         } // end of switch
@@ -1243,6 +1252,10 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	check_if_visited_explored(); 
 	send_explored();
 	add_unvisited();
+	if (un == 0)
+	{
+		missionPhase = 2;
+	}
 	
 	add_to_buffer(&send_buffer, 0xB1, (char) x);
 	add_to_buffer(&send_buffer, 0xB2, (char) y);
@@ -1252,31 +1265,32 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	add_to_buffer(&send_buffer, 0xF2, (char) goaly);
 	add_to_buffer(&send_buffer, 0x70, (char) un);
 	
-	if (!rwall)
+	if (missionPhase == 1)
 	{
-		turn_right();
-	}
-	else if (!fwall)
-	{
-		;
-	}
-	else if(!lwall)
-	{
-		turn_left();
-	}
-	else
-	{
-		turn_back();
-	}
-	
-	in_turn = 0;
-	driven_distance = 0;
-	
-	//	send_driveable();
-	
-	turn_forward();	
-
-	   
+		if (!rwall)
+		{
+			turn_right();
+		}
+		else if (!fwall)
+		{
+			;
+		}
+		else if(!lwall)
+		{
+			turn_left();
+		}
+		else
+		{
+			turn_back();
+		}
+		
+		in_turn = 0;
+		driven_distance = 0;
+		
+		//	send_driveable();
+		
+		turn_forward();	
+	}	   
 }
 void update_driven_distance()
 {
@@ -1366,29 +1380,43 @@ void check_if_visited_explored()
 }
 
 // MISSION FUNCTIONS: --------------------------------------------
+void mission()
+{
+	mission_phase_1();
+}
 void mission_phase_1() //Explore the maze
 {
-	update_sensors_and_empty_receive_buffer();
-	
-	if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+	for (;;)
 	{
-		// Drive forward:
-		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+		update_sensors_and_empty_receive_buffer();
+		
+		if (distance_front > 30 && distance_back > 30 &&
+		((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+		(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+		(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+		{
+			stop();
+			if (missionPhase != 1)
+			{
+				break;
+			}
+			make_direction_decision();
+		}
+		else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+		{
+			// Drive forward:
+			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+		}
+		// In some kind of turn or crossing:
+		else // front < 13
+		{
+			stop(); // Stop, check directions and decide which way to go:
+			if (missionPhase != 1)
+			{
+				break;
+			}
+			make_direction_decision();
+		}
 	}
-	// In some kind of turn or crossing:
-	else // front < 13
-	{
-		stop(); // Stop, check directions and decide which way to go:
-		make_direction_decision();	
-	}
-	if (distance_front > 30 && distance_back > 30 &&
-	((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-	(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-	(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
-	{
-		stop();
-		make_direction_decision();
-	}
-	
 };
