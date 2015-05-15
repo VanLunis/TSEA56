@@ -7,6 +7,8 @@ int8_t xdir = 0;
 int8_t ydir = 1;
 int8_t goalx = 140;
 int8_t goaly = 140;
+int8_t startx = 8;
+int8_t starty = 8;
 int8_t fwall = 0;
 int8_t rwall = 0;
 int8_t lwall = 0;
@@ -31,9 +33,9 @@ void shift_up()
         driveable[j][0] = 0;
         explored[j][0] = 0;
     }
-    //start[1]++;
     goaly++;
-    y++;
+    starty++;
+	y++;
 	
 	// unvisited:
 	if (un > 0)
@@ -60,8 +62,8 @@ void shift_right(){
         driveable[0][j] = 0;
         explored[0][j] = 0;
     }
-    // start[0]++;
     goalx++;
+	startx++;
     x++;
 	
 	// unvisited:
@@ -89,8 +91,8 @@ void shift_down()
         driveable[i][MAP_SIZE - 1] = 0;
         explored[i][MAP_SIZE - 1] = 0;
     }
-    //start[1]--;
     goaly--;
+	starty--;
     y--;
 	// unvisited:
 	if(un>0)
@@ -120,6 +122,7 @@ void shift_left()
     }
     //start[0]--;
     goalx--;
+	startx--;
     x--;
 	
 	// unvisited:
@@ -147,8 +150,8 @@ void init_map(){
             driveable[i][j] = 0;
         }
     }
-	explored[8][8] = 1;
-	driveable[8][8] = 1;
+	//explored[8][8] = 1;
+	//driveable[8][8] = 1;
 }
 
 //updates the robots orientation, call from turn-functions

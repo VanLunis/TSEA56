@@ -70,10 +70,9 @@ unsigned char distance_front = 0;
 unsigned char distance_back = 0;
 
 // Driven distance variables
-unsigned char driven_distance = 5; //drives too far when turned on
+unsigned char driven_distance = 0;
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
-unsigned char goal_detected = 0;
 
 // Initiates control variables
 double e = 0; // Position error
@@ -89,6 +88,12 @@ volatile int autonomous_mode = 1; // 1 true, 0 false: remote control mode
 
 // MISSION PHASES
 volatile int8_t missionPhase = 0; // 0,1,2,3,4,5 or 6
+
+// Tape variables:
+unsigned char tape = 0;
+unsigned char start_detected = 0;
+unsigned char start_line_crossed = 0;
+unsigned char goal_detected = 0;
 
 // FUNCTION DECLARATIONS: ////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
@@ -233,7 +238,6 @@ int main(void)
 		// In autonomous mode?:
 		if(autonomous_mode == 1 && missionPhase == 0)
         {
-			missionPhase = 1; //temporary, don't have phase zero yet
 			mission();
         }
 		else if(autonomous_mode == 1)
@@ -518,13 +522,24 @@ void update_values_from_sensor(){
 				break;
                 
             case 0xF9:  // tejp sensor floor:
-				if (goal_detected == 0)
+				if (fetch_from_buffer(&receive_buffer).val == 1)
 				{
-					if (fetch_from_buffer(&receive_buffer).val == 1)
+					if(missionPhase == 0)
 					{
-						goal_detected = 1;
-						goalx = x + xdir;
-						goaly = y + ydir;
+						if(!start_detected)
+						{
+							start_detected = 1;
+							driven_distance = 0;
+						}
+					}
+					else if (missionPhase == 1)
+					{
+						if(!goal_detected)
+						{
+							goal_detected = 1;
+							goalx = x + xdir;
+							goaly = y + ydir;
+						}
 					}
 				}
                 break;
@@ -1245,10 +1260,10 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	in_turn = 1;
 	driven_distance = 0;
 	
-	update_map();
-	check_if_visited_explored(); 
+	update_map(); 
 	send_explored();
 	add_unvisited();
+	check_if_visited_explored();
 	if (un == 0 && goal_detected == 1)
 	{
 		missionPhase = 2;
@@ -1260,32 +1275,36 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
 	add_to_buffer(&send_buffer, 0xF1, (char) goalx);
 	add_to_buffer(&send_buffer, 0xF2, (char) goaly);
+	add_to_buffer(&send_buffer, 0xF3, (char) startx);
+	add_to_buffer(&send_buffer, 0xF4, (char) starty);
 	add_to_buffer(&send_buffer, 0x70, (char) un);
 	
-	if (!rwall)
+	if (missionPhase == 1)
 	{
-		turn_right();
-	}
-	else if (!fwall)
-	{
-		;
-	}
-	else if(!lwall)
-	{
-		turn_left();
-	}
-	else
-	{
-		turn_back();
-	}
-	
-	in_turn = 0;
-	driven_distance = 0;
-	
-	//	send_driveable();
-	
-	turn_forward();
-		 
+		if (!rwall)
+		{
+			turn_right();
+		}
+		else if (!fwall)
+		{
+			;
+		}
+		else if(!lwall)
+		{
+			turn_left();
+		}
+		else
+		{
+			turn_back();
+		}
+		
+		in_turn = 0;
+		driven_distance = 0;
+		
+		//	send_driveable();
+		
+		turn_forward();
+	}	 
 }
 void update_driven_distance()
 {
@@ -1299,7 +1318,10 @@ void update_driven_distance()
         if (driven_distance >= 20 && (wheel_click ^ wheel_click_prior))
         {
                 driven_distance = 0;
-                update_position();
+				if (missionPhase == 1)
+				{
+					update_position();
+				}
 				update_map();
         }
         wheel_click_prior = wheel_click;
@@ -1318,22 +1340,22 @@ void add_unvisited()
 	int8_t fy = y+ydir;
 	
 	
-	if (!lwall && !explored[lx][ly] && !unvisited_already_in_list(lx,ly))
+	if (!lwall && !explored[lx][ly])
 	{
 		unvisited[un].x = lx;
 		unvisited[un].y = ly;
 		un++;
 	}
-	if (!fwall && !explored[fx][fy] && !unvisited_already_in_list(fx,fy))
+	if (!fwall && !explored[fx][fy])
 	{
 		unvisited[un].x = fx;
-		unvisited[un].y =  fy;
+		unvisited[un].y = fy;
 		un++;
 	}
-	if (!rwall && !explored[rx][ry] && !unvisited_already_in_list(rx,ry))
+	if (!rwall && !explored[rx][ry])
 	{
-		unvisited[un].x =  rx;
-		unvisited[un].y =  ry;
+		unvisited[un].x = rx;
+		unvisited[un].y = ry;
 		un++;
 	}
 }
@@ -1381,7 +1403,28 @@ void check_if_visited_explored()
 // MISSION FUNCTIONS: --------------------------------------------
 void mission()
 {	
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	mission_phase_0();
 	mission_phase_1();
+}
+void mission_phase_0()
+{
+	update_sensors_and_empty_receive_buffer();
+	// Too cross the start line so goal and start won't be mixed up:
+	while(!(start_detected && (driven_distance > 5)))
+	{
+		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+		update_sensors_and_empty_receive_buffer();
+	}
+	stop();
+	add_to_buffer(&send_buffer, 0xF3, (char) startx);// startx, starty is the first square after the start line
+	add_to_buffer(&send_buffer, 0xF4, (char) starty);
+	explored[8][7] = 1; // the square outside the start line
+	driven_distance = 0;
+	missionPhase = 1;	
 }
 void mission_phase_1() //Explore the maze
 {
@@ -1395,11 +1438,11 @@ void mission_phase_1() //Explore the maze
 		(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 		{
 			stop();
+			make_direction_decision();
 			if (missionPhase != 1)
 			{
 				break;
 			}
-			make_direction_decision();
 		}
 		else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
 		{
@@ -1411,11 +1454,11 @@ void mission_phase_1() //Explore the maze
 		else // front < 13
 		{
 			stop(); // Stop, check directions and decide which way to go:
+			make_direction_decision();
 			if (missionPhase != 1)
 			{
 				break;
 			}
-			make_direction_decision();
 		}
 	}
 };

@@ -11,6 +11,8 @@ int8_t xdir;
 int8_t ydir;
 int8_t goalx;
 int8_t goaly;
+int8_t startx;
+int8_t starty;
 int8_t fwall;
 int8_t rwall;
 int8_t lwall;
