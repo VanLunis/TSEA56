@@ -1252,7 +1252,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	check_if_visited_explored(); 
 	send_explored();
 	add_unvisited();
-	if (un == 0)
+	if (un == 0 && goal_detected == 1)
 	{
 		missionPhase = 2;
 	}
@@ -1381,7 +1381,7 @@ void check_if_visited_explored()
 
 // MISSION FUNCTIONS: --------------------------------------------
 void mission()
-{
+{	
 	mission_phase_1();
 }
 void mission_phase_1() //Explore the maze

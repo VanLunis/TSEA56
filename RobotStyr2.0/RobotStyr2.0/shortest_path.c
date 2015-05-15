@@ -43,7 +43,7 @@ void getCommands(point end){
 					c++;
 				}
             //    printf("Go forwards.\n");
-				if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry])))// In decision node?
+				if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
 					c++;
@@ -79,8 +79,11 @@ void getCommands(point end){
                 
 				tmpxdir = -1;
 				tmpydir = 0;
-                command[c] = 'f';
-                c++;
+				if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+				{
+					command[c] = 'f';
+					c++;
+				}
 
             }
 			
@@ -108,8 +111,11 @@ void getCommands(point end){
              //   printf("Go forwards!\n");
                 tmpxdir = 0;
                 tmpydir = 1;
-                command[c] = 'f';
-                c++;
+                if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+                {
+	                command[c] = 'f';
+	                c++;
+                }
 
             }
 			
@@ -137,8 +143,11 @@ void getCommands(point end){
                // printf("Go forwards!\n");
                 tmpxdir = 0;
                 tmpydir = -1;
-                command[c] = 'f';
-                c++;
+                if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+                {
+	                command[c] = 'f';
+	                c++;
+                }
 
 
         }
