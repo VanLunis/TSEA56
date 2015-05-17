@@ -12,14 +12,15 @@ int8_t tmpry;
 void getCommands(point end){
 	int8_t tmpxdir = xdir;
 	int8_t tmpydir = ydir;
-	
+	c = 0;
+
     for (int i=0; i < costmap[end.x][end.y]; i++)
-    {
-		tmplx = path[i].x - tmpydir;
-		tmply = path[i].y + tmpxdir;
-		tmprx = path[i].x + tmpydir;
-		tmpry = path[i].y - tmpxdir;
-           
+    {   
+			tmplx = path[i].x - tmpydir;
+			tmply = path[i].y + tmpxdir;
+			tmprx = path[i].x + tmpydir;
+			tmpry = path[i].y - tmpxdir;
+			
 			//GO EAST 
             if(path[i].x < path[i+1].x)
             {
@@ -28,13 +29,11 @@ void getCommands(point end){
                   //  printf("Turn right, ");
                     command[c] = 'r';
                     c++;
-
                 }
                 else if(tmpxdir == 0 && tmpydir == -1){
                    // printf("Turn left, ");
                     command[c] = 'l';
                     c++;
-
                 }
 				else if(tmpxdir == -1 && tmpydir == 0)
 				{
@@ -43,14 +42,15 @@ void getCommands(point end){
 					c++;
 				}
             //    printf("Go forwards.\n");
-				if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+				else if(tmpxdir == 1 && tmpydir == 0 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
 					c++;
 				}
-				
-                tmpxdir = 1;
+				tmpxdir = 1;
 				tmpydir = 0;
+				
+             
 
             }
 			
@@ -61,13 +61,11 @@ void getCommands(point end){
                 //   printf("Turn left, ");
                     command[c] = 'l';
                     c++;
-
                 }
                 else if(tmpxdir == 0 && tmpydir == -1){
              //       printf("Turn right, ");
                     command[c] = 'r';
                     c++;
-
                 }
 				else if(tmpxdir == 1 && tmpydir == 0)
 				{
@@ -75,16 +73,15 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-            //    printf("Go forwards!\n");
-                
-				tmpxdir = -1;
-				tmpydir = 0;
-				if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+           //    printf("Go forwards.\n");
+				if(tmpxdir == -1 && tmpydir == 0 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
 					c++;
 				}
-
+				tmpxdir = -1;
+				tmpydir = 0;
+				
             }
 			
 			//GO NORTH
@@ -94,13 +91,11 @@ void getCommands(point end){
                     //printf("Turn left, ");
                     command[c] = 'l';
                     c++;
-
                 }
                 else if(tmpxdir == -1 && tmpydir == 0){
                     //printf("Turn right, ");
                     command[c] = 'r';
                     c++;
-
                 }
 				else if(tmpxdir == 0 && tmpydir == -1)
 				{
@@ -108,15 +103,14 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-             //   printf("Go forwards!\n");
-                tmpxdir = 0;
-                tmpydir = 1;
-                if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
-                {
-	                command[c] = 'f';
-	                c++;
-                }
-
+				//    printf("Go forwards.\n");
+				if(tmpxdir == 0 && tmpydir == 1 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+				{
+					command[c] = 'f';
+					c++;
+				}
+				tmpxdir = 0;
+				tmpydir = 1;
             }
 			
 			//GO SOUTH
@@ -140,16 +134,14 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-               // printf("Go forwards!\n");
-                tmpxdir = 0;
-                tmpydir = -1;
-                if(!((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
-                {
-	                command[c] = 'f';
-	                c++;
-                }
-
-
+				//    printf("Go forwards.\n");
+				else if(tmpxdir == 0 && tmpydir == -1 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
+				{
+					command[c] = 'f';
+					c++;
+				}
+				tmpxdir = 0;
+				tmpydir = -1;
         }
         //printf("Elem %i in path is: %i, %i\n", i, path[i].x, path[i].y);
     }
