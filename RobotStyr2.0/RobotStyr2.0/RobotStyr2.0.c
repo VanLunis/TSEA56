@@ -320,7 +320,8 @@ void update_values_from_sensor(){
 				break;
                 
             case 0xF9:  // tejp sensor floor:
-				if (fetch_from_buffer(&receive_buffer).val == 1)
+				tape = fetch_from_buffer(&receive_buffer).val;
+				if (tape == 1)
 				{
 					if(missionPhase == 0)
 					{
@@ -332,7 +333,7 @@ void update_values_from_sensor(){
 					}
 					else if (missionPhase == 1)
 					{
-						if(!goal_detected)
+						if(!goal_detected && !(x == firstx && (y == firsty || y == starty)))
 						{
 							goal_detected = 1;
 							goalx = x + xdir;
@@ -706,7 +707,7 @@ void turn_back_control_on_both_walls()
         {
 			// short hard-coded rotate:
 			rotate_right(60);
-			for (int i = 0; i<700; i++){ _delay_ms(1);}	  
+			for (int i = 0; i<1200; i++){ _delay_ms(1);}	  
         }
 		while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
         {
@@ -722,7 +723,7 @@ void turn_back_control_on_both_walls()
         {
 	        // short hard-coded rotate:
 	        rotate_left(60);
-	        for (int i = 0; i<700; i++){ _delay_ms(1);}
+	        for (int i = 0; i<1200; i++){ _delay_ms(1);}
         }
 		while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && abs(distance_left_back - distance_left_front) < ABS_VALUE_LEFT))
         {
@@ -1022,7 +1023,7 @@ void turn_left_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
 }
-
+// TODO: turn_left_control_on_left_wall
 
 // Turn right:
 void turn_right()
@@ -1161,6 +1162,7 @@ void turn_right_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
 }
+// TODO: turn_right_control_on_right_wall
 
 // MAZE FUNCTIONS: -----------------------------------------------
 
@@ -1349,12 +1351,10 @@ void update_driven_distance()
         if (driven_distance >= 20 && (wheel_click ^ wheel_click_prior))
         {
                 driven_distance = 0;
-				if (missionPhase > 0)
-				{
-					update_position();
-					add_to_buffer(&send_buffer, 0xB1, (char) x);
-					add_to_buffer(&send_buffer, 0xB2, (char) y);
-				}
+				update_position();
+				add_to_buffer(&send_buffer, 0xB1, (char) x);
+				add_to_buffer(&send_buffer, 0xB2, (char) y);
+				
 				if (missionPhase < 2)
 				{
 					update_map();	
@@ -1451,29 +1451,22 @@ void mission()
 	mission_phase_6();
 	mission_phase_7();
 }
-void mission_phase_0() // Cross the start line
+void mission_phase_0()
 {
 	update_sensors_and_empty_receive_buffer();
 	// Too cross the start line so goal and start won't be mixed up:
-	while(!start_detected)
+	while(!(start_detected && (driven_distance > 5)))
 	{
-		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-		update_sensors_and_empty_receive_buffer();
+			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+			update_sensors_and_empty_receive_buffer();
 	}
 	stop();
-	driven_distance = 0;
-	while (driven_distance < 10)
-	{
-		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-		update_sensors_and_empty_receive_buffer();
-	}
-	driven_distance = 0;
-	add_to_buffer(&send_buffer, 0xF3, (char) firstx);// firstx, firsty is the first square after the start line
-	add_to_buffer(&send_buffer, 0xF4, (char) firsty);
+	add_to_buffer(&send_buffer, 0xF3, (char) startx);// startx, starty is the first square after the start line
+	add_to_buffer(&send_buffer, 0xF4, (char) starty);
 	explored[8][7] = 1; // the square outside the start line
-	missionPhase = 1;	
+	driven_distance = 0;
+	missionPhase = 1;
 }
 void mission_phase_1() // Explore the maze
 {
@@ -1519,7 +1512,12 @@ void mission_phase_2() // Go shortest way from current square to start square
 	traceBack(costmap, start);
 	getCommands(start);
 	
+	stop();
 	add_to_buffer(&send_buffer, 0xF5, (char) c);
+	for (int i=0; i<c; i++)
+	{
+		add_to_buffer(&send_buffer, 0xF0, command[i]);
+	}
 	for (int i=0; i<c; i++)
 	{
 		for(;;)
@@ -1534,7 +1532,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 				stop();
 				if(i == c - 1)
 				{
-					tape_detected == 0;	
+					tape_detected = 0;	
 				}
 				run_direction_command(command[i]);
 				if(i == c - 1)
@@ -1560,7 +1558,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 				stop(); // Stop, check directions and decide which way to go:
 				if(i == c - 1)
 				{
-					tape_detected == 0;
+					tape_detected = 0;
 				}
 				run_direction_command(command[i]);
 				if(i == c - 1)
@@ -1581,7 +1579,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 }
 void mission_phase_3() // Grab the object and turn 180 degrees
 {
-	for (int i=0; i<400; i++)
+	for (int i=0; i<700; i++)
 	{
 		update_sensors_and_empty_receive_buffer();
 		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1589,7 +1587,15 @@ void mission_phase_3() // Grab the object and turn 180 degrees
 	}
 	// TODO: Add code for grabbing object
 	get_possible_directions();
-	turn_back(); 
+	stop();
+	_delay_ms(50);
+	_delay_ms(50);
+	turn_back();
+	stop(); 
+	for (int i=0; i<10; i++)
+	{
+		_delay_ms(50);
+	}
 	missionPhase = 4;
 }
 void mission_phase_4() // Go shortest way from start to goal
@@ -1600,7 +1606,12 @@ void mission_phase_4() // Go shortest way from start to goal
 	traceBack(costmap, goal);
 	getCommands(goal);
 	
+	stop();
 	add_to_buffer(&send_buffer, 0xF5, (char) c);
+	for (int i=0; i<c; i++)
+	{
+		add_to_buffer(&send_buffer, 0xF0, command[i]);
+	}
 	for (int i=0; i<c; i++)
 	{
 		for(;;)
@@ -1613,7 +1624,20 @@ void mission_phase_4() // Go shortest way from start to goal
 			(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 			{
 				stop();
+				if(i == c - 1)
+				{
+					tape_detected = 0;
+				}
 				run_direction_command(command[i]);
+				if(i == c - 1)
+				{
+					while (!tape_detected)
+					{
+						update_sensors_and_empty_receive_buffer();
+						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+					}
+				}
 				break;
 			}
 			else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
@@ -1626,7 +1650,20 @@ void mission_phase_4() // Go shortest way from start to goal
 			else // front < 13
 			{
 				stop(); // Stop, check directions and decide which way to go:
+				if(i == c - 1)
+				{
+					tape_detected = 0;
+				}
 				run_direction_command(command[i]);
+				if(i == c - 1)
+				{
+					while (!tape_detected)
+					{
+						update_sensors_and_empty_receive_buffer();
+						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+					}
+				}
 				break;
 			}
 		}
@@ -1634,7 +1671,7 @@ void mission_phase_4() // Go shortest way from start to goal
 	stop();
 	missionPhase = 5;
 }
-void mission_phase_5() // Back until see tape, leave object, back and turn 180 degrees
+void mission_phase_5() // Back until see tape, leave object, back out
 {
 	missionPhase = 6;
 }
