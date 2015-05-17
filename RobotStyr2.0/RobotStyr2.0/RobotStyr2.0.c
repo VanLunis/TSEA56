@@ -1275,27 +1275,48 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	add_to_buffer(&send_buffer, 0xB4, (char) (ydir + 5)); // +5 since Komm cant send zeroes
 	add_to_buffer(&send_buffer, 0xF1, (char) goalx);
 	add_to_buffer(&send_buffer, 0xF2, (char) goaly);
-	add_to_buffer(&send_buffer, 0xF3, (char) startx);
+	add_to_buffer(&send_buffer, 0xF3, (char) firstx);
 	add_to_buffer(&send_buffer, 0xF4, (char) starty);
 	add_to_buffer(&send_buffer, 0x70, (char) un);
 	
 	if (missionPhase == 1)
 	{
-		if (!rwall)
+		int8_t lx = x-ydir;
+		int8_t ly = y+xdir;
+		
+		int8_t rx = x+ydir;
+		int8_t ry = y-xdir;
+		
+		int8_t fx = x+xdir;
+		int8_t fy = y+ydir;
+		
+		if(rwall && fwall && lwall)
+		{
+			turn_back();
+		}
+		else if (!rwall && !explored[rx][ry])
 		{
 			turn_right();
 		}
-		else if (!fwall)
+		else if (!fwall && !explored[fx][fy])
 		{
 			;
 		}
-		else if(!lwall)
+		else if(!lwall  && !explored[lx][ly])
 		{
 			turn_left();
 		}
-		else
+		else if (!rwall && rx != startx && ry !=starty)
 		{
-			turn_back();
+			turn_right();
+		}
+		else if (!fwall && fx != startx && fy !=starty)
+		{
+			;
+		}
+		else if(!lwall && lx != startx && ly !=starty)
+		{
+			turn_left();
 		}
 		
 		in_turn = 0;
@@ -1420,8 +1441,8 @@ void mission_phase_0()
 		update_sensors_and_empty_receive_buffer();
 	}
 	stop();
-	add_to_buffer(&send_buffer, 0xF3, (char) startx);// startx, starty is the first square after the start line
-	add_to_buffer(&send_buffer, 0xF4, (char) starty);
+	add_to_buffer(&send_buffer, 0xF3, (char) firstx);// firstx, firsty is the first square after the start line
+	add_to_buffer(&send_buffer, 0xF4, (char) firsty);
 	explored[8][7] = 1; // the square outside the start line
 	driven_distance = 0;
 	missionPhase = 1;	

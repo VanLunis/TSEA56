@@ -8,7 +8,9 @@ int8_t ydir = 1;
 int8_t goalx = 140;
 int8_t goaly = 140;
 int8_t startx = 8;
-int8_t starty = 8;
+int8_t starty = 7;
+int8_t firstx = 8;
+int8_t firsty = 8;
 int8_t fwall = 0;
 int8_t rwall = 0;
 int8_t lwall = 0;
@@ -35,6 +37,7 @@ void shift_up()
     }
     goaly++;
     starty++;
+	firsty++;
 	y++;
 	
 	// unvisited:
@@ -64,6 +67,7 @@ void shift_right(){
     }
     goalx++;
 	startx++;
+	firstx++;
     x++;
 	
 	// unvisited:
@@ -93,6 +97,7 @@ void shift_down()
     }
     goaly--;
 	starty--;
+	firsty--;
     y--;
 	// unvisited:
 	if(un>0)
@@ -123,6 +128,7 @@ void shift_left()
     //start[0]--;
     goalx--;
 	startx--;
+	firstx--;
     x--;
 	
 	// unvisited:
