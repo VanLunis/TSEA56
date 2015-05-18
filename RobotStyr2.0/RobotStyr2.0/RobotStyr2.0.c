@@ -347,6 +347,13 @@ void update_values_from_sensor(){
 							tape_detected = 1;
 						}
 					}
+					else if (missionPhase == 4)
+					{
+						if(!tape_detected)
+						{
+							tape_detected = 1;
+						}
+					}
 				}
                 break;
                 
@@ -1023,7 +1030,6 @@ void turn_left_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
 }
-// TODO: turn_left_control_on_left_wall
 
 // Turn right:
 void turn_right()
@@ -1162,7 +1168,7 @@ void turn_right_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
 }
-// TODO: turn_right_control_on_right_wall
+
 
 // MAZE FUNCTIONS: -----------------------------------------------
 
@@ -1509,6 +1515,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 	point start = {startx, starty};
 	point temp = {x, y};
 	floodfill(temp, start);
+	
 	traceBack(costmap, start);
 	getCommands(start);
 	
@@ -1671,7 +1678,7 @@ void mission_phase_4() // Go shortest way from start to goal
 	stop();
 	missionPhase = 5;
 }
-void mission_phase_5() // Back until see tape, leave object, back out
+void mission_phase_5() // Back until see tape, leave object, back out, turn 180 degrees
 {
 	missionPhase = 6;
 }
