@@ -226,15 +226,21 @@ int main(void)
     }
 */
 //	set_claw_gap(50); // KLO
+	
 		
 
     for(;;)
     {
 		// KLO:
-	
-	
-	
 	exploring_mode();
+	for (int i=0; i<100; i++)
+	{
+		_delay_ms(10);
+		
+	}
+	
+	
+open_claw_gap();
 	
 	for (int i=0; i<100; i++)
 	{
@@ -251,7 +257,7 @@ int main(void)
 	}
 	*/
 	close_claw_gap();
-	for (int i=0; i<100; i++)
+	for (int i=0; i<400; i++)
 	{
 		_delay_ms(10);
 		
@@ -1416,17 +1422,17 @@ void set_claw_gap(unsigned char new_gap_percentage) // KLO
 }
 void open_claw_gap() // KLO
 {
-	OCR1B = 0x0010;
+	OCR1B = 0x0015;
 	
 }
 void close_claw_gap() // KLO{
 {
 	
-	OCR1B = 0x0040;
+	OCR1B = 0x0010;
 }
 
 void exploring_mode(){
-	OCR1A = 0x0090;
-	OCR1B = 0x0010;
+	
+	OCR1B = 0x0018;
 	
 	}

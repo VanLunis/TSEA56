@@ -1,4 +1,4 @@
-/*
+ /*
  * RobotStyr2.0.c
  *
  * Created: 11/5 - 2015
@@ -11,6 +11,9 @@
 //////////////////////////////////////////////////////////////////////
 //----------------------------  MAIN -------------------------------//
 //////////////////////////////////////////////////////////////////////
+void open_claw_gap(); // KLO
+void close_claw_gap(); // KLO
+void exploring_mode();
 
 int main(void)
 
@@ -103,15 +106,21 @@ void init_control_module(void)
     buffer_init(&send_buffer);
     
     // PWM init
-    DDRD  = (1<<DDD6)|(1<<DDD7);        // sets OCR2A and OCR2B as outputs => needed?
-    OCR2A = 0;
-    OCR2B = 0;
-    
+     DDRD  = (1<<DDD6)|(1<<DDD7)|(1<<DDD5)|(1<<DDD4); // KLO
+     OCR1A = 0; // KLO
+     OCR1B = 0; // KLO
+     OCR2A = 0;
+     OCR2B = 0;
     /*  TCCR2A: [COM2x1, COM2x0] = [1,0] =>  OCR2n clears on compare match
      [WGM22, WGM21, WGM20] = [0,1,1] => fast PWM
      
      TCCR2B: [CS22, CS21, CS20] = [0,1,1] => clk/8   */
-    
+   
+     // Gripping arm
+     ICR1 = 0x00FF;
+     TCCR1A = (1<<COM1A1)|(0<<COM1A0)|(1<<COM1B1)|(0<<COM1B0)|(1<<WGM11)|(0<<WGM10); // KLO
+     TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS12)|(0<<CS11)|(1<<CS10); // KLO
+	// Motor
     TCCR2A = (1<<WGM21)| (1<<WGM20) | (1<<COM2A1) | (0<<COM2A0) | (1<<COM2B1) | (0<<COM2B0);
     TCCR2B = (0<<WGM22) | (0<<CS22) | (1<<CS21) | (1<<CS20);
     
@@ -122,8 +131,11 @@ void init_control_module(void)
     DDRC = (1 << DDC0) | (1 << DDC1);
     // Initiate gear as 11: straight forward
     PORTC = (1<<PORTC1) | (1<<PORTC0);
-    
+    exploring_mode();
 };
+  
+       
+   
 
 // COMMUNICATION FUNCTIONS: -----------------------------------
 // Functions that are used in interrupts caused by the SPI-bus
@@ -280,6 +292,7 @@ void send_explored()
 		
 	}// end of row loop
 }
+
 
 // In autonomous mode: get sensor values from receive buffer
 void update_values_from_sensor(){
@@ -1169,6 +1182,23 @@ void turn_right_control_on_back_wall()
     _delay_ms(50);
 }
 
+// Claw functions:
+void open_claw_gap() // KLO
+{
+	OCR1B = 0x0015;
+	
+}
+void close_claw_gap() // KLO{
+	{
+		
+		OCR1B = 0x0010;
+	}
+void exploring_mode(){
+		
+		OCR1B = 0x0018;
+		
+	}
+
 
 // MAZE FUNCTIONS: -----------------------------------------------
 
@@ -1595,6 +1625,14 @@ void mission_phase_3() // Grab the object and turn 180 degrees
 	// TODO: Add code for grabbing object
 	get_possible_directions();
 	stop();
+	
+	open_claw_gap();
+	for (int i=0; i<300; i++)
+	{
+		_delay_ms(10);
+	}
+	close_claw_gap();
+	
 	_delay_ms(50);
 	_delay_ms(50);
 	turn_back();
@@ -1681,9 +1719,82 @@ void mission_phase_4() // Go shortest way from start to goal
 void mission_phase_5() // Back until see tape, leave object, back out, turn 180 degrees
 {
 	missionPhase = 6;
+	exploring_mode();
+	turn_back();
 }
 void mission_phase_6() // Go shortest way from current square to start square
 {
+		point goal = {startx, starty};
+		point start = {goalx, goaly};
+		floodfill(start, goal);
+		traceBack(costmap, goal);
+		getCommands(goal);
+		
+		stop();
+		add_to_buffer(&send_buffer, 0xF5, (char) c);
+		for (int i=0; i<c; i++)
+		{
+			add_to_buffer(&send_buffer, 0xF0, command[i]);
+		}
+		for (int i=0; i<c; i++)
+		{
+			for(;;)
+			{
+				update_sensors_and_empty_receive_buffer();
+				
+				if (distance_front > 30 && distance_back > 30 &&
+				((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+				(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+				(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+				{
+					stop();
+					if(i == c - 1)
+					{
+						tape_detected = 0;
+					}
+					run_direction_command(command[i]);
+					if(i == c - 1)
+					{
+						while (!tape_detected)
+						{
+							update_sensors_and_empty_receive_buffer();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						}
+					}
+					break;
+				}
+				else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+				{
+					// Drive forward:
+					alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+					go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+				}
+				// In some kind of turn or crossing:
+				else // front < 13
+				{
+					stop(); // Stop, check directions and decide which way to go:
+					if(i == c - 1)
+					{
+						tape_detected = 0;
+					}
+					run_direction_command(command[i]);
+					if(i == c - 1)
+					{
+						while (!tape_detected)
+						{
+							update_sensors_and_empty_receive_buffer();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						}
+					}
+					break;
+				}
+			}
+		}
+		stop();
+	
+	
 	missionPhase = 7;
 }
 void mission_phase_7() // Stop, also default value before start mission
