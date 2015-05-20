@@ -359,6 +359,13 @@ void update_values_from_sensor(){
 							tape_detected = 1;
 						}
 					}
+					else if (missionPhase == 6)
+					{
+						if(!tape_detected)
+						{
+							tape_detected = 1;
+						}
+					}
 				}
                 break;
                 
@@ -1388,6 +1395,12 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	send_explored();
 	add_unvisited();
 	check_if_visited_explored();
+	add_to_buffer(&send_buffer, 0x70, (char) un+1);
+	for (int i=0; i<un; i++)
+	{
+		add_to_buffer(&send_buffer, 0x18,unvisited[i].x);
+		add_to_buffer(&send_buffer, 0x18,unvisited[i].y);
+	}
 	if (un == 0 && goal_detected == 1)
 	{
 		missionPhase = 2;
@@ -1432,15 +1445,21 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 			add_to_buffer(&send_buffer, 0xF6, 'l');
 			turn_left();
 		}
-		// TODO: need to add flood fill!!
-		
+		else
+		{
+			point loc = {x, y};
+			floodfill(loc, unvisited[un-1]);
+			traceBack(costmap, unvisited[un-1]);
+			getCommands(unvisited[un-1]);
+			no_forward = 1;
+			run_direction_command(command[0]);
+			no_forward = 0;	
+		}
 		in_turn = 0;
 		driven_distance = 0;
 		
 		turn_forward();
-	}
-	add_to_buffer(&send_buffer, 0x70, (char) un);
-		 
+	}		 
 }
 void run_direction_command(unsigned char direction_command)
 {
@@ -1490,7 +1509,7 @@ void run_direction_command(unsigned char direction_command)
 	{
 		turn_forward();
 	}
-	add_to_buffer(&send_buffer, 0x70, (char) un);
+	add_to_buffer(&send_buffer, 0x70, (char) un+1);
 }
 void update_driven_distance()
 {
@@ -1572,13 +1591,13 @@ void check_if_visited_explored()
 			if(explored[unvisited[k].x][unvisited[k].y] == 1)
 			{
 				un--;
-				k--;
 				if(k < un)
 				{
 					for (int l = k; l < un; l++)
 					{
 						unvisited[l] = unvisited[l+1];
 					}
+					k--;
 				}
 				else
 				{
