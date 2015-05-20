@@ -657,10 +657,10 @@ void turn_forward()
 {
 	//  STOPP
 	stop(); _delay_ms(50); _delay_ms(50);
-	if(distance_front > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)//(distance_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)
+	if(distance_front > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)
 	{
 		// FORWARD
-		while (!(distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
+		while (!((distance_front < FRONT_MAX_DISTANCE) || (distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)))
 		{
 			forward_slow();
 			update_sensors_and_empty_receive_buffer();
@@ -674,7 +674,8 @@ void turn_forward()
 	
 	if(distance_front > WALLS_MAX_DISTANCE)
 	{
-		while (!(distance_left_back < WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))// OBS changed
+		while (!((distance_front < FRONT_MAX_DISTANCE) || 
+		(driven_distance > 17 && ((distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE) || (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)))))// OBS changed
 		{
 			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
 			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
@@ -934,21 +935,19 @@ void turn_back_control_on_zero_walls()
 void turn_left()
 {
     update_orientation('l');
-    if(distance_front < WALLS_MAX_DISTANCE)
+    if(fwall && !lwall)
     {
         turn_left_control_on_right_wall();
     }
-    else if(distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    else if(!fwall && !lwall && !rwall)
     {
         turn_left_control_on_zero_walls();
     }
-    else if(((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||(distance_left_back > 28)||(distance_left_front > 28))
-            && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    else if(!fwall && !lwall && rwall)
     {
         turn_left_control_on_back_wall();
     }
-	else if(((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE)||(distance_left_back > 28)||(distance_left_front > 28))
-	&& distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE)
+	else if(!lwall && distance_back < WALLS_MAX_DISTANCE)
 	{
 		turn_left_control_on_left_wall();
 	}
@@ -1133,21 +1132,19 @@ void turn_left_control_on_left_wall()
 void turn_right()
 {
     update_orientation('r');
-    if(distance_front < WALLS_MAX_DISTANCE)
+    if(fwall && !rwall)
     {
         turn_right_control_on_left_wall();
     }
-    else if(distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    else if(!fwall && !lwall && !rwall)
     {
         turn_right_control_on_zero_walls();
     }
-    else if(((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||(distance_right_back > 28)||(distance_right_front > 28))
-            && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE)
+    else if(!fwall && lwall && !rwall)
     {
         turn_right_control_on_back_wall();
     }
-	else if(((distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||(distance_right_back > 28)||(distance_right_front > 28))
-	&& distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE)
+	else if(!rwall && distance_back < WALLS_MAX_DISTANCE)
 	{
 		turn_right_control_on_right_wall();
 	}
@@ -1325,6 +1322,7 @@ void turn_right_control_on_right_wall()
 	_delay_ms(50);
 	_delay_ms(50);	
 }
+
 // Claw functions:
 void open_claw_gap() // KLO
 {
@@ -1728,7 +1726,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 				run_direction_command(command[i]);
 				if(i == c - 1)
 				{
-					while (!tape_detected)
+					while (!tape_detected || distance_front < FRONT_MAX_DISTANCE)
 					{
 						update_sensors_and_empty_receive_buffer();
 						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1754,7 +1752,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 				run_direction_command(command[i]);
 				if(i == c - 1)
 				{
-					while (!tape_detected)
+					while (!tape_detected || distance_front < FRONT_MAX_DISTANCE)
 					{
 						update_sensors_and_empty_receive_buffer();
 						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1832,7 +1830,7 @@ void mission_phase_4() // Go shortest way from start to goal
 				run_direction_command(command[i]);
 				if(i == c - 1)
 				{
-					while (!tape_detected)
+					while (!tape_detected || distance_front < FRONT_MAX_DISTANCE)
 					{
 						update_sensors_and_empty_receive_buffer();
 						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1860,7 +1858,7 @@ void mission_phase_4() // Go shortest way from start to goal
 				no_forward = 0;
 				if(i == c - 1)
 				{
-					while (!tape_detected)
+					while (!tape_detected || distance_front < FRONT_MAX_DISTANCE)
 					{
 						update_sensors_and_empty_receive_buffer();
 						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1962,7 +1960,7 @@ void mission_phase_6() // Go shortest way from current square to start square
 				run_direction_command(command[i]);
 				if(i == c - 1)
 				{
-					while (!tape_detected)
+					while (!tape_detected || distance_front < FRONT_MAX_DISTANCE)
 					{
 						update_sensors_and_empty_receive_buffer();
 						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1988,7 +1986,7 @@ void mission_phase_6() // Go shortest way from current square to start square
 				run_direction_command(command[i]);
 				if(i == c - 1)
 				{
-					while (!tape_detected)
+					while (!tape_detected || distance_front < FRONT_MAX_DISTANCE)
 					{
 						update_sensors_and_empty_receive_buffer();
 						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
