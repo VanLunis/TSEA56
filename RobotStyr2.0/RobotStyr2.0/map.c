@@ -145,7 +145,7 @@ void shift_left()
 
 void init_map(){
     x = 8;
-    y = 8;
+    y = 7;
     xdir = 0;
     ydir = 1;
     for (int i = 0; i < 17; i++)

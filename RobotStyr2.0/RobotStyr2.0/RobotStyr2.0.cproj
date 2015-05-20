@@ -107,6 +107,9 @@
     <Compile Include="RobotStyr2.0.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="RobotStyr2.0.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="shortest_path.c">
       <SubType>compile</SubType>
     </Compile>

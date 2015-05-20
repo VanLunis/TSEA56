@@ -21,7 +21,7 @@
 #define FRONT_MAX_DISTANCE 10
 #define BACK_MAX_DISTANCE 30
 #define ROBOT_LENGTH 10
-#define WHEEL_CLICK_DISTANCE 5 //3.14*2*3.1/4 = distance for each click for the wheel
+#define WHEEL_CLICK_DISTANCE 1.25 //3.14*2*3.1/16 = distance for each click for the wheel
 
 #define ABS_VALUE_RIGHT 3.5
 #define ABS_VALUE_LEFT 3.5
@@ -61,9 +61,10 @@ unsigned char distance_front = 0;
 unsigned char distance_back = 0;
 
 // Driven distance variables
-unsigned char driven_distance = 0;
+double driven_distance = 0;
 unsigned char wheel_click = 0;
 unsigned char wheel_click_prior = 0;
+unsigned char no_forward = 0;
 
 // Initiates control variables
 double e = 0; // Position error
@@ -142,13 +143,14 @@ void turn_left();
 void turn_left_control_on_right_wall();
 void turn_left_control_on_zero_walls();
 void turn_left_control_on_back_wall();
-
+void turn_left_control_on_left_wall();
 
 // Turn right:
 void turn_right();
 void turn_right_control_on_left_wall();
 void turn_right_control_on_zero_walls();
 void turn_right_control_on_back_wall();
+void turn_right_control_on_right_wall();
 
 // MAZE FUNCTIONS: -----------------------------------------------
 unsigned char get_possible_directions();
