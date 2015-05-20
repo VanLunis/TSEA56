@@ -724,44 +724,58 @@ void turn_back_control_on_both_walls()
     // Closer to left wall then right? Then rotate right 180 degrees! :
     if ((distance_right_back + distance_right_front) > (distance_left_back + distance_left_front))
     {
-        if (!fwall)
-        {
-			// short hard-coded rotate:
-			rotate_right(60);
-			for (int i = 0; i<1200; i++){ _delay_ms(1);}
-			stop();
-			_delay_ms(50);
-			_delay_ms(50);		  
-        }
-		while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
-        {
-            if(fwall)
+		// short hard-coded rotate:
+		rotate_right(50);
+		for (int i = 0; i<1200; i++){ _delay_ms(1);}
+		stop();
+		_delay_ms(50);
+		_delay_ms(50);
+		if(fwall)
+		{
+			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
 			{
-				rotate_right(50);	
+            
+				rotate_right(40);
+				update_sensors_and_empty_receive_buffer();	
 			}
-			else
+        }
+		else
+		{
+			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
 			{
 				rotate_right(40);
+				update_sensors_and_empty_receive_buffer();
 			}
-            update_sensors_and_empty_receive_buffer();
-        }
-    }
-    
-    // Closer to left wall then left? Then rotate left 180 degrees! :
+		}
+	}
+    // Closer to right wall then left? Then rotate left 180 degrees! :
     else
     {
-        if (!fwall)
-        {
-	        // short hard-coded rotate:
-	        rotate_left(60);
-	        for (int i = 0; i<1200; i++){ _delay_ms(1);}
-        }
-		while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && abs(distance_left_back - distance_left_front) < ABS_VALUE_LEFT))
-        {
-            rotate_left(50);
-            update_sensors_and_empty_receive_buffer();
-        }
-    }
+		// short hard-coded rotate:
+		rotate_left(50);
+		for (int i = 0; i<1200; i++){ _delay_ms(1);}
+		stop();
+		_delay_ms(50);
+		_delay_ms(50);
+		if(fwall)
+		{
+			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
+			{
+				
+				rotate_left(40);
+				update_sensors_and_empty_receive_buffer();
+			}
+		}
+		else
+		{
+			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
+			{
+				rotate_left(40);
+				update_sensors_and_empty_receive_buffer();
+			}	
+		}
+	}
+    
     // Need to align? //
     stop();
     _delay_ms(50);
@@ -1986,8 +2000,13 @@ void mission_phase_6() // Go shortest way from current square to start square
 		}
 	}
 	stop();
-	
-	
+	for (int i=0; i<700; i++)
+	{
+		update_sensors_and_empty_receive_buffer();
+		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+	}
+	stop();
 	missionPhase = 7;
 }
 void mission_phase_7() // Stop, also default value before start mission
