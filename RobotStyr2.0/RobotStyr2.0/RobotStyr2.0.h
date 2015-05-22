@@ -31,9 +31,6 @@
 #define SLIGHT_POSITIVE_LIMIT 1
 #define POSITIVE_LIMIT 5
 
-//#define AUTONOMOUS_MODE 1
-//#define REMOTE_CONTROL_MODE 0
-
 // PD-control constants
 #define DELTA_T 1
 #define K_e_P 15         // proportional gain for position error e
@@ -45,52 +42,53 @@
 // VARIABLES ////////////////////////////////////////////////////////
 
 // SPI communication variables
-struct data_buffer receive_buffer;
-struct data_buffer send_buffer;
+volatile struct data_buffer receive_buffer;
+volatile struct data_buffer send_buffer;
 volatile int mode = 0; // 0 receiving, 1 sending.
 volatile int transmission_status = 0;
 volatile struct data_byte temp_data;
 volatile int counter = 0;
 
 // Distance to wall variables (from sensors)
-unsigned char distance_right_back = 0;
-unsigned char distance_right_front = 0;
-unsigned char distance_left_back = 0;
-unsigned char distance_left_front = 0;
-unsigned char distance_front = 0;
-unsigned char distance_back = 0;
+volatile unsigned char distance_right_back = 0;
+volatile unsigned char distance_right_front = 0;
+volatile unsigned char distance_left_back = 0;
+volatile unsigned char distance_left_front = 0;
+volatile unsigned char distance_front = 0;
+volatile unsigned char distance_back = 0;
 
 // Driven distance variables
-double driven_distance = 0;
-unsigned char wheel_click = 0;
-unsigned char wheel_click_prior = 0;
-unsigned char no_forward = 0;
+volatile double driven_distance = 0;
+volatile unsigned char wheel_click = 0;
+volatile unsigned char wheel_click_prior = 0;
+volatile unsigned char no_forward = 0;
 
 // Initiates control variables
-double e = 0; // Position error
-double alpha = 0; // Angle error
+volatile double e = 0; // Position error
+volatile double alpha = 0; // Angle error
 
-double e_prior = 0;
-double alpha_prior = 0;
-double e_prior_prior = 0;
-double alpha_prior_prior = 0;
+volatile double e_prior = 0;
+volatile double alpha_prior = 0;
+volatile double e_prior_prior = 0;
+volatile double alpha_prior_prior = 0;
 
 // SWITCH:
-volatile int autonomous_mode = 1; // 1 true, 0 false: remote control mode
+volatile int autonomous_mode; // 1 true, 0 false: remote control mode
 
 // MISSION PHASES
-volatile int8_t missionPhase = 0; // 0, 1, 2, 3, 4, 5, 6 or 7
+volatile int8_t missionPhase = 7; // 0, 1, 2, 3, 4, 5, 6 or 7
 
 // Tape variables:
-unsigned char tape = 0;
-unsigned char start_detected = 0;
-unsigned char start_line_crossed = 0;
-unsigned char goal_detected = 0;
-unsigned char tape_detected = 0;
+volatile unsigned char tape = 0;
+volatile unsigned char start_detected = 0;
+volatile unsigned char start_line_crossed = 0;
+volatile unsigned char goal_detected = 0;
+volatile unsigned char tape_detected = 0;
 
 // FUNCTION DECLARATIONS: ////////////////////////////////////////////
 // INIT FUNCTION: ---------------------------------------------
 void init_control_module(void);
+void reset_values();
 
 // COMMUNICATION FUNCTIONS: -----------------------------------
 // Functions that are used in interrupts caused by the SPI-bus
@@ -175,7 +173,9 @@ void mission_phase_7(); // Stop, default value before start mission
 
 // GRIPPING ARM FUNCTIONS: ---------------------------------------
 // Functions for the arm:
-
+void open_claw_gap(); // KLO
+void close_claw_gap(); // KLO
+void claw_full_open();
 
 // FUNCTIONS FOR SINGLE BIT MANIPULATION: ------------------------
 #define bit_get(p,m) ((p) & (m))

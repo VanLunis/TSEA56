@@ -5,21 +5,21 @@
 #include <stdlib.h>
 #include <util/delay.h>
 
-int8_t x;
-int8_t y;
-int8_t xdir;
-int8_t ydir;
-int8_t goalx;
-int8_t goaly;
-int8_t startx;
-int8_t starty;
-int8_t firstx;
-int8_t firsty;
-int8_t fwall;
-int8_t rwall;
-int8_t lwall;
+volatile int8_t x;
+volatile int8_t y;
+volatile int8_t xdir;
+volatile int8_t ydir;
+volatile int8_t goalx;
+volatile int8_t goaly;
+volatile int8_t startx;
+volatile int8_t starty;
+volatile int8_t firstx;
+volatile int8_t firsty;
+volatile int8_t fwall;
+volatile int8_t rwall;
+volatile int8_t lwall;
 
-unsigned char in_turn;
+volatile unsigned char in_turn;
 
 //Origin is the upper left element.
 int driveable[MAP_SIZE][MAP_SIZE];

@@ -23,14 +23,15 @@ volatile int counter = 0;
 volatile struct data_byte temp_data;
 
 // SWITCH:
-volatile int autonomous_mode = 1; // 1 true, 0 false: remote control mode
+volatile int autonomous_mode; // 1 true, 0 false: remote control mode
 
-struct data_buffer sensor_buffer;
-struct data_buffer control_buffer;
-struct data_buffer pc_buffer_from_sensor;
-struct data_buffer pc_buffer_from_control;
+volatile struct data_buffer sensor_buffer;
+volatile struct data_buffer control_buffer;
+volatile struct data_buffer pc_buffer_from_sensor;
+volatile struct data_buffer pc_buffer_from_control;
 
 void init_master(void);
+void reset_values();
 
 // SPI bus functions
 void send(struct data_buffer* my_buffer, int slave);
@@ -44,6 +45,16 @@ void receive_from_control();
 unsigned char USART_Receive(void);
 void USART_Transmit(unsigned char data);
 void USART_to_SPI(void);
+
+
+// FUNCTIONS FOR SINGLE BIT MANIPULATION: ------------------------
+#define bit_get(p,m) ((p) & (m))
+#define bit_set(p,m) ((p) |= (m))
+#define bit_clear(p,m) ((p) &= ~(m))
+#define bit_flip(p,m) ((p) ^= (m))
+#define bit_write(c,p,m) (c ? bit_set(p,m) : bit_clear(p,m))
+#define BIT(x)  (0x01 << (x))
+#define LONGBIT(x) ((unsigned long)0x00000001 << (x))
 
 //////////////////////////////////////////////////////////////////////
 //----------------------------  MAIN -------------------------------//
@@ -71,7 +82,7 @@ int main(void)
         if(!buffer_empty(&pc_buffer_from_sensor))
         {
             counter++;
-			if (counter == 10)
+			if (counter == 10 && autonomous_mode == 1)
 			{
 				USART_Transmit(0x00);
 				USART_Transmit(fetch_from_buffer(&pc_buffer_from_sensor).type);
@@ -92,15 +103,18 @@ int main(void)
         
         if(!buffer_empty(&pc_buffer_from_control))
         {
-            USART_Transmit(0x00);
-            USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).type);
-            if(fetch_from_buffer(&pc_buffer_from_control).val == 0x00)
+            if (autonomous_mode == 1)
             {
-                USART_Transmit(0x01);
-            }
-            else
-            {
-                USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
+				USART_Transmit(0x00);
+				USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).type);
+				if(fetch_from_buffer(&pc_buffer_from_control).val == 0x00)
+				{
+					USART_Transmit(0x01);
+				}
+				else
+				{
+					USART_Transmit(fetch_from_buffer(&pc_buffer_from_control).val);
+				}
             }
             discard_from_buffer(&pc_buffer_from_control);
         }
@@ -138,6 +152,19 @@ ISR(USART0_RX_vect)
     }
 }
 
+ISR(PCINT0_vect)
+{
+	for (int i=0; i<5; i++)
+	{
+		_delay_ms(50);
+	}
+	reset_values();
+	for (int i=0; i<15; i++)
+	{
+		_delay_ms(50);
+	}
+	init_master();
+}
 
 //////////////// INIT FUNCTION //////////////////////////////////////
 void init_master(void)
@@ -160,11 +187,10 @@ void init_master(void)
     // Enable IRQ1 and IRQ0
     EIMSK = (1<<INT1)|(1<<INT0);
     
-    // Init data buffers in master
-    buffer_init(&sensor_buffer);
-    buffer_init(&control_buffer);
-    buffer_init(&pc_buffer_from_sensor);
-    buffer_init(&pc_buffer_from_control);
+	// Enable pin change interrupt 0 (PCINTO)
+	DDRA = 0x00;
+	PCICR = (1<<PCIE0);
+	PCMSK0 = (1<<PCINT0);
     
     // Init serial USART (bluetooth)
     /* Set baud rate */
@@ -175,7 +201,26 @@ void init_master(void)
     UCSR0B = (1<<RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
     /* Set frame format: 8data, 1stop bit */
     UCSR0C = (0<<USBS0)|(3<<UCSZ00);
+
+	reset_values();
 };
+void reset_values()
+{
+	// Init data buffers in master
+	buffer_init(&sensor_buffer);
+	buffer_init(&control_buffer);
+	buffer_init(&pc_buffer_from_sensor);
+	buffer_init(&pc_buffer_from_control);
+	
+	// SWITCH
+	autonomous_mode = PINA && 0x01;
+	
+	sensor_ready = 1;
+	control_ready = 1;
+	failed_attempts = 0;
+	transmission_status = 0; // 0 to send .type, 1 to send .val, 2 when both sent
+	counter = 0;
+}
 
 ///////////////// COMMUNICATION SPI FUNCTIONS //////////////////////
 void send(struct data_buffer* my_buffer, int slave)

@@ -11,34 +11,24 @@
 //////////////////////////////////////////////////////////////////////
 //----------------------------  MAIN -------------------------------//
 //////////////////////////////////////////////////////////////////////
-void open_claw_gap(); // KLO
-void close_claw_gap(); // KLO
-void claw_full_open();
 
 int main(void)
 
 {
     init_control_module();
     sei();
-    init_map();
-    
-    // To make the robot stand still when turned on:
-    
-    if (autonomous_mode == 1)
-    {
-        while(distance_front < FRONT_MAX_DISTANCE)
-        {
-            update_values_from_sensor();
-        }
-        
-        stop();
-    }
     
     for(;;)
     {
 		// In autonomous mode?:
 		if(autonomous_mode == 1 && missionPhase == 0)
         {
+			stop();
+			while(distance_front < FRONT_MAX_DISTANCE)
+			{
+				update_values_from_sensor();
+			}	
+			stop();
 			mission();
         }
 		else if(autonomous_mode == 1)
@@ -48,7 +38,12 @@ int main(void)
 		// In remote control mode?:
 		else
 		{
-			remote_control_mode();
+			stop();
+			while(autonomous_mode == 0)
+			{
+				remote_control_mode();	
+			}
+			stop();
 		}
     }
     
@@ -86,7 +81,25 @@ ISR(INT1_vect)
     mode = 1;
     SPDR = fetch_from_buffer(&send_buffer).type;
 }
-
+// Start mission interrupt
+ISR(INT2_vect)
+{
+	stop();
+	_delay_ms(50);
+	reset_values();
+	_delay_ms(50);
+	missionPhase = 0;
+}
+// Interrupt from switch
+ISR(PCINT0_vect)
+{
+	stop();
+	for (int i=0; i<10; i++)
+	{
+		_delay_ms(50);
+	}
+	init_control_module();
+}
 
 // INIT FUNCTION: ---------------------------------------------
 void init_control_module(void)
@@ -96,30 +109,31 @@ void init_control_module(void)
     DDRB = (1<<DDB6)|(1<<DDB3);
     PINB = (0<<PINB4);
     
-    // IRQ1 and IRQ0 activated on rising edge
-    EICRA = (1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
-    // Enable IRQ1 and IRQ0
-    EIMSK = (1<<INT1)|(1<<INT0);
+    // IRQ2, IRQ1 and IRQ0 activated on rising edge
+    EICRA = (1<<ISC21)|(1<<ISC20)|(1<<ISC11)|(1<<ISC10)|(1<<ISC01)|(1<<ISC00);
+    // Enable IRQ2, IRQ1 and IRQ0
+    EIMSK = (1<<INT2)|(1<<INT1)|(1<<INT0);
     
-    //Initiate the buffers.
-    buffer_init(&receive_buffer);
-    buffer_init(&send_buffer);
+	// Enable pin change interrupt 0 (PCINTO)
+	DDRA = 0x00;
+	PCICR = (1<<PCIE0);
+	PCMSK0 = (1<<PCINT0);
     
     // PWM init
-     DDRD  = (1<<DDD6)|(1<<DDD7)|(1<<DDD5)|(1<<DDD4); // KLO
-     OCR1A = 0; // KLO
-     OCR1B = 0; // KLO
-     OCR2A = 0;
-     OCR2B = 0;
+    DDRD  = (1<<DDD6)|(1<<DDD7)|(1<<DDD5)|(1<<DDD4); // KLO
+    OCR1A = 0; // KLO
+    OCR1B = 0; // KLO
+    OCR2A = 0;
+    OCR2B = 0;
     /*  TCCR2A: [COM2x1, COM2x0] = [1,0] =>  OCR2n clears on compare match
      [WGM22, WGM21, WGM20] = [0,1,1] => fast PWM
      
      TCCR2B: [CS22, CS21, CS20] = [0,1,1] => clk/8   */
    
-     // Gripping arm
-     ICR1 = 0x00FF;
-     TCCR1A = (1<<COM1A1)|(0<<COM1A0)|(1<<COM1B1)|(0<<COM1B0)|(1<<WGM11)|(0<<WGM10); // KLO
-     TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS12)|(0<<CS11)|(1<<CS10); // KLO
+    // Gripping arm
+    ICR1 = 0x00FF;
+    TCCR1A = (1<<COM1A1)|(0<<COM1A0)|(1<<COM1B1)|(0<<COM1B0)|(1<<WGM11)|(0<<WGM10); // KLO
+    TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS12)|(0<<CS11)|(1<<CS10); // KLO
 	// Motor
     TCCR2A = (1<<WGM21)| (1<<WGM20) | (1<<COM2A1) | (0<<COM2A0) | (1<<COM2B1) | (0<<COM2B0);
     TCCR2B = (0<<WGM22) | (0<<CS22) | (1<<CS21) | (1<<CS20);
@@ -130,13 +144,65 @@ void init_control_module(void)
     // set port 22 and port 23 as right resp. left
     DDRC = (1 << DDC0) | (1 << DDC1);
     // Initiate gear as 11: straight forward
-    PORTC = (1<<PORTC1) | (1<<PORTC0);
-    claw_full_open();
+    PORTC = (1<<PORTC1) | (1<<PORTC0); 
+	
+	reset_values();
 };
-  
-       
-   
+void reset_values()
+{
+	OCR1A = 0; // KLO
+	OCR1B = 0; // KLO
+	OCR2A = 0;
+	OCR2B = 0;
+	
+	claw_full_open();
+	init_map();
+	
+	//Initiate the buffers.
+	buffer_init(&receive_buffer);
+	buffer_init(&send_buffer);	
+	// SPI communication variables
+	mode = 0; // 0 receiving, 1 sending.
+	transmission_status = 0;
+	counter = 0;
 
+	// Distance to wall variables (from sensors)
+	distance_right_back = 0;
+	distance_right_front = 0;
+	distance_left_back = 0;
+	distance_left_front = 0;
+	distance_front = 0;
+	distance_back = 0;
+
+	// Driven distance variables
+	driven_distance = 0;
+	wheel_click = 0;
+	wheel_click_prior = 0;
+	no_forward = 0;
+
+	// Initiates control variables
+	e = 0; // Position error
+	alpha = 0; // Angle error
+
+	e_prior = 0;
+	alpha_prior = 0;
+	e_prior_prior = 0;
+	alpha_prior_prior = 0;
+
+	// SWITCH:
+	autonomous_mode = PINA && 0x01; // 1 true, 0 false: remote control mode
+
+	// MISSION PHASES
+	missionPhase = 7; // 0, 1, 2, 3, 4, 5, 6 or 7
+
+	// Tape variables:
+	tape = 0;
+	start_detected = 0;
+	start_line_crossed = 0;
+	goal_detected = 0;
+	tape_detected = 0;
+}
+  
 // COMMUNICATION FUNCTIONS: -----------------------------------
 // Functions that are used in interrupts caused by the SPI-bus
 void send_to_master(struct data_buffer* my_buffer)
@@ -292,7 +358,6 @@ void send_explored()
 		
 	}// end of row loop
 }
-
 
 // In autonomous mode: get sensor values from receive buffer
 void update_values_from_sensor(){
@@ -660,7 +725,7 @@ void turn_forward()
 	if(distance_front > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)
 	{
 		// FORWARD
-		while (!((distance_front < FRONT_MAX_DISTANCE) || (distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)))
+		while (!(distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
 		{
 			forward_slow();
 			update_sensors_and_empty_receive_buffer();
@@ -939,15 +1004,15 @@ void turn_left()
     {
         turn_left_control_on_right_wall();
     }
-    else if(!fwall && !lwall && !rwall)
+    else if(!fwall && !lwall && !rwall && distance_back > WALLS_MAX_DISTANCE)
     {
         turn_left_control_on_zero_walls();
     }
-    else if(!fwall && !lwall && rwall)
+    else if(!fwall && !lwall && rwall && distance_back > WALLS_MAX_DISTANCE)
     {
         turn_left_control_on_back_wall();
     }
-	else if(!lwall && distance_back < WALLS_MAX_DISTANCE)
+	else if(!fwall && !lwall && rwall && distance_back < WALLS_MAX_DISTANCE)
 	{
 		turn_left_control_on_left_wall();
 	}
@@ -1135,15 +1200,15 @@ void turn_right()
     {
         turn_right_control_on_left_wall();
     }
-    else if(!fwall && !lwall && !rwall)
+    else if(!fwall && !lwall && !rwall && distance_back > WALLS_MAX_DISTANCE)
     {
         turn_right_control_on_zero_walls();
     }
-    else if(!fwall && lwall && !rwall)
+    else if(!fwall && lwall && !rwall && distance_back > WALLS_MAX_DISTANCE)
     {
         turn_right_control_on_back_wall();
     }
-	else if(!rwall && distance_back < WALLS_MAX_DISTANCE)
+	else if(!fwall && lwall && !rwall && distance_back < WALLS_MAX_DISTANCE)
 	{
 		turn_right_control_on_right_wall();
 	}
@@ -1339,7 +1404,6 @@ void claw_full_open(){
 		OCR1B = 0x0018;
 		
 	}
-
 
 // MAZE FUNCTIONS: -----------------------------------------------
 
@@ -1630,6 +1694,7 @@ void mission()
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
+	init_map();
 	mission_phase_0();
 	mission_phase_1();
 	mission_phase_2();
@@ -1725,9 +1790,12 @@ void mission_phase_2() // Go shortest way from current square to start square
 				stop();
 				if(i == c - 1)
 				{
-					tape_detected = 0;	
+					tape_detected = 0;
+					tape = 0;
+					no_forward = 1;	
 				}
 				run_direction_command(command[i]);
+				no_forward = 0;
 				if(i == c - 1)
 				{
 					while (!tape_detected)
@@ -1752,8 +1820,11 @@ void mission_phase_2() // Go shortest way from current square to start square
 				if(i == c - 1)
 				{
 					tape_detected = 0;
+					tape = 0;
+					no_forward = 1;
 				}
 				run_direction_command(command[i]);
+				no_forward = 1;
 				if(i == c - 1)
 				{
 					while (!tape_detected)
@@ -1773,7 +1844,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 void mission_phase_3() // Grab the object and turn 180 degrees
 {
 	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	for (int i=0; i<1400; i++)
+	for (int i=0; i<2000; i++)
 	{
 		update_sensors_and_empty_receive_buffer();
 		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
@@ -1802,7 +1873,7 @@ void mission_phase_3() // Grab the object and turn 180 degrees
 void mission_phase_4() // Go shortest way from start to goal
 {
 	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	point loc = {x, y};
+	point loc = {startx, starty};
 	point goal = {goalx, goaly};
 	floodfill(loc, goal);
 	traceBack(costmap, goal);
@@ -1830,8 +1901,10 @@ void mission_phase_4() // Go shortest way from start to goal
 				{
 					tape_detected = 0;
 					tape = 0;
+					no_forward = 1;
 				}
 				run_direction_command(command[i]);
+				no_forward = 0;
 				if(i == c - 1)
 				{
 					while (!tape_detected)
@@ -1856,6 +1929,7 @@ void mission_phase_4() // Go shortest way from start to goal
 				if(i == c - 1)
 				{
 					tape_detected = 0;
+					tape = 0;
 					no_forward = 1;
 				}
 				run_direction_command(command[i]);
@@ -1960,8 +2034,10 @@ void mission_phase_6() // Go shortest way from current square to start square
 				{
 					tape_detected = 0;
 					tape = 0;
+					no_forward = 1;
 				}
 				run_direction_command(command[i]);
+				no_forward = 0;
 				if(i == c - 1)
 				{
 					while (!tape_detected)
@@ -1986,8 +2062,11 @@ void mission_phase_6() // Go shortest way from current square to start square
 				if(i == c - 1)
 				{
 					tape_detected = 0;
+					tape = 0;
+					no_forward = 1;
 				}
 				run_direction_command(command[i]);
+				no_forward = 0;
 				if(i == c - 1)
 				{
 					while (!tape_detected)
@@ -2002,7 +2081,7 @@ void mission_phase_6() // Go shortest way from current square to start square
 		}
 	}
 	stop();
-	for (int i=0; i<1400; i++)
+	for (int i=0; i<2000; i++)
 	{
 		update_sensors_and_empty_receive_buffer();
 		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);

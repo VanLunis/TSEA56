@@ -1,21 +1,21 @@
 #include "map.h"
 
 // MAP variables
-int8_t x = 0;
-int8_t y = 0;
-int8_t xdir = 0;
-int8_t ydir = 1;
-int8_t goalx = 140;
-int8_t goaly = 140;
-int8_t startx = 8;
-int8_t starty = 7;
-int8_t firstx = 8;
-int8_t firsty = 8;
-int8_t fwall = 0;
-int8_t rwall = 0;
-int8_t lwall = 0;
+volatile int8_t x = 0;
+volatile int8_t y = 0;
+volatile int8_t xdir = 0;
+volatile int8_t ydir = 1;
+volatile int8_t goalx = 140;
+volatile int8_t goaly = 140;
+volatile int8_t startx = 8;
+volatile int8_t starty = 7;
+volatile int8_t firstx = 8;
+volatile int8_t firsty = 8;
+volatile int8_t fwall = 0;
+volatile int8_t rwall = 0;
+volatile int8_t lwall = 0;
 
-unsigned char in_turn = 0;
+volatile unsigned char in_turn = 0;
 
 // OBS: Need to shift path and end as well?!!
 
