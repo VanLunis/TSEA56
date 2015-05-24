@@ -748,7 +748,7 @@ void turn_forward()
 	if(distance_front > WALLS_MAX_DISTANCE)
 	{
 		while (!((distance_front < FRONT_MAX_DISTANCE) || 
-		(driven_distance > 15 && ((distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE) || (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)))))// OBS changed
+		(driven_distance > 14 && ((distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE) || (distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)))))// OBS changed
 		{
 			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
 			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
@@ -1863,7 +1863,7 @@ void mission_phase_2() // Go shortest way from current square to start square
 void mission_phase_3() // Grab the object and turn 180 degrees
 {
 	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	for (int i=0; i<1700; i++)
+	for (int i=0; i<1400; i++)
 	{
 		update_sensors_and_empty_receive_buffer();
 		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
