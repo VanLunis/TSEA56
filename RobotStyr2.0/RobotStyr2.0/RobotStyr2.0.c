@@ -1935,12 +1935,20 @@ void mission_phase_4() // Go shortest way from start to goal
 				no_forward = 0;
 				if(i == c - 1)
 				{
+					get_possible_directions();
+					if(!lwall && !rwall)
+					{
+						while(!(tape_detected || distance_left_front < WALLS_MAX_DISTANCE || distance_right_front < WALLS_MAX_DISTANCE))
+						{
+							update_sensors_and_empty_receive_buffer();
+							forward_slow();
+						}
+					}
 					while (!tape_detected)
 					{
 						update_sensors_and_empty_receive_buffer();
-						forward_slow();
-						//alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						//go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
 					}
 				}
 				break;
@@ -1965,12 +1973,20 @@ void mission_phase_4() // Go shortest way from start to goal
 				no_forward = 0;
 				if(i == c - 1)
 				{
+					get_possible_directions();
+					if(!lwall && !rwall)
+					{
+						while(!(tape_detected || distance_left_front < WALLS_MAX_DISTANCE || distance_right_front < WALLS_MAX_DISTANCE))
+						{
+							update_sensors_and_empty_receive_buffer();
+							forward_slow();
+						}
+					}
 					while (!tape_detected)
 					{
 						update_sensors_and_empty_receive_buffer();
-						forward_slow();
-						//alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						//go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
 					}
 				}
 				break;

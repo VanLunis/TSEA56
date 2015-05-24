@@ -189,27 +189,3 @@ void claw_full_open();
 //MAP FUNCTIONS
 void init_map();
 void update_orientation(char turn);
-
-/*
- To set a bit:
- bit_set(foo, 0x01);
- To set bit number 5:
- bit_set(foo, BIT(5));
- To clear bit number 6 with a bit mask:
- bit_clear(foo, 0x40);
- To flip bit number 0:
- bit_flip(foo, BIT(0));
- To check bit number 3:
- if(bit_get(foo, BIT(3)))
- {
- }
- To set or clear a bit based on bit number 4:
- if(bit_get(foo, BIT(4)))
- {
- bit_set(bar, BIT(0));
- }
- else
- {
- bit_clear(bar, BIT(0));
- }
- */
