@@ -795,35 +795,8 @@ void turn_back_control_on_both_walls()
     _delay_ms(50);
 	
 	
-    // Closer to left wall then right? Then rotate right 180 degrees! :
+    // Closer to left wall then right? Then rotate left 180 degrees! :
     if ((distance_right_back + distance_right_front) > (distance_left_back + distance_left_front))
-    {
-		// short hard-coded rotate:
-		rotate_right(40);
-		for (int i = 0; i<1350; i++){ _delay_ms(1);}
-		stop();
-		_delay_ms(50);
-		_delay_ms(50);
-		if(fwall)
-		{
-			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
-			{
-            
-				rotate_right(30);
-				update_sensors_and_empty_receive_buffer();	
-			}
-        }
-		else
-		{
-			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
-			{
-				rotate_right(30);
-				update_sensors_and_empty_receive_buffer();
-			}
-		}
-	}
-    // Closer to right wall then left? Then rotate left 180 degrees! :
-    else
     {
 		// short hard-coded rotate:
 		rotate_left(40);
@@ -835,8 +808,35 @@ void turn_back_control_on_both_walls()
 		{
 			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
 			{
-				
+            
 				rotate_left(30);
+				update_sensors_and_empty_receive_buffer();	
+			}
+        }
+		else
+		{
+			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
+			{
+				rotate_left(30);
+				update_sensors_and_empty_receive_buffer();
+			}
+		}
+	}
+    // Closer to right wall then left? Then rotate right 180 degrees! :
+    else
+    {
+		// short hard-coded rotate:
+		rotate_right(40);
+		for (int i = 0; i<1350; i++){ _delay_ms(1);}
+		stop();
+		_delay_ms(50);
+		_delay_ms(50);
+		if(fwall)
+		{
+			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
+			{
+				
+				rotate_right(30);
 				update_sensors_and_empty_receive_buffer();
 			}
 		}
@@ -844,7 +844,7 @@ void turn_back_control_on_both_walls()
 		{
 			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
 			{
-				rotate_left(30);
+				rotate_right(30);
 				update_sensors_and_empty_receive_buffer();
 			}	
 		}
@@ -1626,7 +1626,8 @@ void update_driven_distance()
 				
 				if (missionPhase < 2)
 				{
-					update_map();	
+					update_map();
+					send_explored();	
 				}
         }
         wheel_click_prior = wheel_click;
@@ -1725,144 +1726,155 @@ void mission()
 }
 void mission_phase_0()
 {
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	update_sensors_and_empty_receive_buffer();
-	// Too cross the start line so goal and start won't be mixed up:
-	while(!(x==8 && y==8))
+	if (missionPhase == 0)
 	{
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+		update_sensors_and_empty_receive_buffer();
+		// Too cross the start line so goal and start won't be mixed up:
+		while(!(x==8 && y==8))
+		{
 			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
 			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
 			update_sensors_and_empty_receive_buffer();
+		}
+		stop();
+		add_to_buffer(&send_buffer, 0xF3, (char) startx);// startx, starty is the first square after the start line
+		add_to_buffer(&send_buffer, 0xF4, (char) starty);
+		explored[8][7] = 1; // the square outside the start line
+		missionPhase = 1;
 	}
-	stop();
-	add_to_buffer(&send_buffer, 0xF3, (char) startx);// startx, starty is the first square after the start line
-	add_to_buffer(&send_buffer, 0xF4, (char) starty);
-	explored[8][7] = 1; // the square outside the start line
-	missionPhase = 1;
 }
 void mission_phase_1() // Explore the maze
 {
-	tape = 0;
-	goal_detected = 0;
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	for (;;)
+	if(missionPhase == 1)
 	{
-		update_sensors_and_empty_receive_buffer();
-		
-		if (distance_front > 28 &&
-		((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-		(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-		(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
-		{
-			stop();
-			make_direction_decision();
-			if (missionPhase != 1)
-			{
-				break;
-			}
-		}
-		else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
-		{
-			// Drive forward:
-			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-		}
-		// In some kind of turn or crossing:
-		else // front < 13
-		{
-			stop(); // Stop, check directions and decide which way to go:
-			make_direction_decision();
-			if (missionPhase != 1)
-			{
-				break;
-			}
-		}
-	}
-};
-void mission_phase_2() // Go shortest way from current square to start square
-{
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	point start = {startx, starty};
-	point temp = {x, y};
-	floodfill(temp, start);
-	
-	traceBack(costmap, start);
-	getCommands(start);
-	
-	stop();
-	add_to_buffer(&send_buffer, 0xF5, (char) c);
-	for (int i=0; i<c; i++)
-	{
-		add_to_buffer(&send_buffer, 0xF0, command[i]);
-	}
-	for (int i=0; i<c; i++)
-	{
-		for(;;)
+		tape = 0;
+		goal_detected = 0;
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+		for (;;)
 		{
 			update_sensors_and_empty_receive_buffer();
 			
-			if (distance_front > 30 &&
+			if (distance_front > 28 &&
 			((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
 			(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
 			(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 			{
 				stop();
-				if(i == c - 1)
+				make_direction_decision();
+				if (missionPhase != 1)
 				{
-					tape_detected = 0;
-					//tape = 0;
-					//no_forward = 1;	
+					break;
 				}
-				run_direction_command(command[i]);
-				//no_forward = 0;
-				if(i == c - 1)
-				{
-					while (!tape_detected)
-					{
-						update_sensors_and_empty_receive_buffer();
-						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);						
-					}
-				}
-				break;
 			}
 			else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
 			{
 				// Drive forward:
 				alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-				go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+				go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
 			}
 			// In some kind of turn or crossing:
 			else // front < 13
 			{
 				stop(); // Stop, check directions and decide which way to go:
-				if(i == c - 1)
+				make_direction_decision();
+				if (missionPhase != 1)
 				{
-					tape_detected = 0;
-					//tape = 0;
-					//no_forward = 1;
+					break;
 				}
-				run_direction_command(command[i]);
-				//no_forward = 0;
-				if(i == c - 1)
-				{
-					while (!tape_detected)
-					{
-						update_sensors_and_empty_receive_buffer();
-						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
-					}
-				}
-				break;
 			}
-		}	
+		}
+	}	
+};
+void mission_phase_2() // Go shortest way from current square to start square
+{
+	if(missionPhase == 2)
+	{
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+		point start = {startx, starty};
+		point temp = {x, y};
+		floodfill(temp, start);
+		
+		traceBack(costmap, start);
+		getCommands(start);
+		
+		stop();
+		add_to_buffer(&send_buffer, 0xF5, (char) c);
+		for (int i=0; i<c; i++)
+		{
+			add_to_buffer(&send_buffer, 0xF0, command[i]);
+		}
+		for (int i=0; i<c; i++)
+		{
+			for(;;)
+			{
+				update_sensors_and_empty_receive_buffer();
+				
+				if (distance_front > 30 &&
+				((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+				(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+				(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+				{
+					stop();
+					if(i == c - 1)
+					{
+						tape_detected = 0;
+						//tape = 0;
+						//no_forward = 1;
+					}
+					run_direction_command(command[i]);
+					//no_forward = 0;
+					if(i == c - 1)
+					{
+						while (!tape_detected)
+						{
+							update_sensors_and_empty_receive_buffer();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						}
+					}
+					break;
+				}
+				else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+				{
+					// Drive forward:
+					alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+					go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+				}
+				// In some kind of turn or crossing:
+				else // front < 13
+				{
+					stop(); // Stop, check directions and decide which way to go:
+					if(i == c - 1)
+					{
+						tape_detected = 0;
+						//tape = 0;
+						//no_forward = 1;
+					}
+					run_direction_command(command[i]);
+					//no_forward = 0;
+					if(i == c - 1)
+					{
+						while (!tape_detected)
+						{
+							update_sensors_and_empty_receive_buffer();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						}
+					}
+					break;
+				}
+			}
+		}
+		stop();
+		missionPhase = 3;
 	}
-	stop();
-	missionPhase = 3;
 }
 void mission_phase_3() // Grab the object and turn 180 degrees
 {
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+	if(missionPhase == 3)
+	{
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
 	for (int i=0; i<1400; i++)
 	{
 		update_sensors_and_empty_receive_buffer();
@@ -1895,246 +1907,256 @@ void mission_phase_3() // Grab the object and turn 180 degrees
 	}
 	turn_forward();// OBS added*/
 	missionPhase = 4;
+	}
 }	
 void mission_phase_4() // Go shortest way from start to goal
 {
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	add_to_buffer(&send_buffer, 0xB1, (char) x);
-	add_to_buffer(&send_buffer, 0xB2, (char) y);
-	point loc = {x, y};
-	point goal = {goalx, goaly};
-	floodfill(loc, goal);
-	traceBack(costmap, goal);
-	getCommands(goal);
-	
-	stop();
-	add_to_buffer(&send_buffer, 0xF5, (char) c);
-	for (int i=0; i<c; i++)
+	if (missionPhase==4)
 	{
-		add_to_buffer(&send_buffer, 0xF0, command[i]);
-	}
-	for (int i=0; i<c; i++)
-	{
-		for(;;)
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+		add_to_buffer(&send_buffer, 0xB1, (char) x);
+		add_to_buffer(&send_buffer, 0xB2, (char) y);
+		point loc = {x, y};
+		point goal = {goalx, goaly};
+		floodfill(loc, goal);
+		traceBack(costmap, goal);
+		getCommands(goal);
+		
+		stop();
+		add_to_buffer(&send_buffer, 0xF5, (char) c);
+		for (int i=0; i<c; i++)
 		{
-			update_sensors_and_empty_receive_buffer();
-			
-			if (distance_front > 28 &&
-			((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-			(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-			(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
+			add_to_buffer(&send_buffer, 0xF0, command[i]);
+		}
+		for (int i=0; i<c; i++)
+		{
+			for(;;)
 			{
-				stop();
-				if(i == c - 1)
+				update_sensors_and_empty_receive_buffer();
+				
+				if (distance_front > 28 &&
+				((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+				(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+				(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 				{
-					tape_detected = 0;
-					tape = 0;
-					no_forward = 1;
-				}
-				run_direction_command(command[i]);
-				no_forward = 0;
-				if(i == c - 1)
-				{
-					get_possible_directions();
-					if(!lwall && !rwall)
+					stop();
+					if(i == c - 1)
 					{
-						while(!(tape_detected || distance_left_front < WALLS_MAX_DISTANCE || distance_right_front < WALLS_MAX_DISTANCE))
+						tape_detected = 0;
+						tape = 0;
+						no_forward = 1;
+					}
+					run_direction_command(command[i]);
+					no_forward = 0;
+					if(i == c - 1)
+					{
+						get_possible_directions();
+						if(!lwall && !rwall)
+						{
+							while(!(tape_detected || distance_left_front < WALLS_MAX_DISTANCE || distance_right_front < WALLS_MAX_DISTANCE))
+							{
+								update_sensors_and_empty_receive_buffer();
+								forward_slow();
+							}
+						}
+						while (!tape_detected)
 						{
 							update_sensors_and_empty_receive_buffer();
-							forward_slow();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
 						}
 					}
-					while (!tape_detected)
+					break;
+				}
+				else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+				{
+					// Drive forward:
+					alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+					go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+				}
+				// In some kind of turn or crossing:
+				else // front < 13
+				{
+					stop(); // Stop, check directions and decide which way to go:
+					if(i == c - 1)
 					{
-						update_sensors_and_empty_receive_buffer();
-						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						tape_detected = 0;
+						tape = 0;
+						no_forward = 1;
 					}
-				}
-				break;
-			}
-			else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
-			{
-				// Drive forward:
-				alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-				go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-			}
-			// In some kind of turn or crossing:
-			else // front < 13
-			{
-				stop(); // Stop, check directions and decide which way to go:
-				if(i == c - 1)
-				{
-					tape_detected = 0;
-					tape = 0;
-					no_forward = 1;
-				}
-				run_direction_command(command[i]);
-				no_forward = 0;
-				if(i == c - 1)
-				{
-					get_possible_directions();
-					if(!lwall && !rwall)
+					run_direction_command(command[i]);
+					no_forward = 0;
+					if(i == c - 1)
 					{
-						while(!(tape_detected || distance_left_front < WALLS_MAX_DISTANCE || distance_right_front < WALLS_MAX_DISTANCE))
+						get_possible_directions();
+						if(!lwall && !rwall)
+						{
+							while(!(tape_detected || distance_left_front < WALLS_MAX_DISTANCE || distance_right_front < WALLS_MAX_DISTANCE))
+							{
+								update_sensors_and_empty_receive_buffer();
+								forward_slow();
+							}
+						}
+						while (!tape_detected)
 						{
 							update_sensors_and_empty_receive_buffer();
-							forward_slow();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
 						}
 					}
-					while (!tape_detected)
-					{
-						update_sensors_and_empty_receive_buffer();
-						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
-					}
+					break;
 				}
-				break;
 			}
 		}
+		stop();
+		_delay_ms(50);
+		_delay_ms(50);
+		missionPhase = 5;
 	}
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	missionPhase = 5;
 }
 void mission_phase_5() // Go forward short, leave object, back out
 {
-	driven_distance = 0;
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	
-	in_turn = 1;
-	forward_slow();
-	for (int i = 0; i<40; i++)
+	if(missionPhase == 5)
 	{
-		_delay_ms(10);
+		driven_distance = 0;
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+		
+		in_turn = 1;
+		forward_slow();
+		for (int i = 0; i<40; i++)
+		{
+			_delay_ms(10);
+		}
+		stop();
+		driven_distance = 0;
+		for (int i = 0; i <10; i++)
+		{
+			_delay_ms(10);
+		}
+		claw_full_open();
+		
+		backwards();
+		for (int i = 0; i<80; i++)
+		{
+			_delay_ms(10);
+		}
+		
+		stop();
+		// Fulkod:
+		x = goalx - xdir;
+		y = goaly - ydir;
+		get_possible_directions();
+		if (lwall && rwall)
+		{
+			turn_back();
+		}
+		else if(command[c-1] == 'r')
+		{
+			turn_right();
+		}
+		else if(command[c-1] == 'l')
+		{
+			turn_left();
+		}
+		else if(command[c-1] == 'f')
+		{
+			turn_back();
+		}
+		in_turn = 0;
+		_delay_ms(50);
+		_delay_ms(50);
+		missionPhase = 6;
 	}
-	stop();
-	driven_distance = 0;
-	for (int i = 0; i <10; i++)
-	{
-		_delay_ms(10);
-	}
-	claw_full_open();
-	
-	backwards();
-	for (int i = 0; i<80; i++)
-	{
-		_delay_ms(10);
-	}
-	
-	stop();
-	// Fulkod:
-	x = goalx - xdir;
-	y = goaly - ydir;
-	get_possible_directions();
-	if (lwall && rwall)
-	{
-		turn_back();
-	}
-	else if(command[c-1] == 'r')
-	{
-		turn_right();
-	}
-	else if(command[c-1] == 'l')
-	{
-		turn_left();
-	}
-	else if(command[c-1] == 'f')
-	{
-		turn_back();
-	}
-	in_turn = 0;
-	_delay_ms(50);
-	_delay_ms(50);
-	missionPhase = 6;
 }
 void mission_phase_6() // Go shortest way from current square to start square
 {
-	add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
-	point loc = {x, y};
-	point start = {startx, starty};
-	floodfill(loc, start);
-	traceBack(costmap, start);
-	getCommands(start);
+	if(missionPhase == 6)
+	{
+		add_to_buffer(&send_buffer, 0x10, (char) missionPhase);
+		point loc = {x, y};
+		point start = {startx, starty};
+		floodfill(loc, start);
+		traceBack(costmap, start);
+		getCommands(start);
 		
-	stop();
-	add_to_buffer(&send_buffer, 0xF5, (char) c);
-	for (int i=0; i<c; i++)
-	{
-		add_to_buffer(&send_buffer, 0xF0, command[i]);
-	}
-	for (int i=0; i<c; i++)
-	{
-		for(;;)
+		stop();
+		add_to_buffer(&send_buffer, 0xF5, (char) c);
+		for (int i=0; i<c; i++)
 		{
-			update_sensors_and_empty_receive_buffer();
+			add_to_buffer(&send_buffer, 0xF0, command[i]);
+		}
+		for (int i=0; i<c; i++)
+		{
+			for(;;)
+			{
+				update_sensors_and_empty_receive_buffer();
 				
-			if (distance_front > 28 &&
-			((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
-			(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
-			(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
-			{
-				stop();
-				if(i == c - 1)
+				if (distance_front > 28 &&
+				((distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)||
+				(distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)||
+				(distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)))
 				{
-					tape_detected = 0;
-					//tape = 0;
-					//no_forward = 1;
-				}
-				run_direction_command(command[i]);
-				//no_forward = 0;
-				if(i == c - 1)
-				{
-					while (!tape_detected)
+					stop();
+					if(i == c - 1)
 					{
-						update_sensors_and_empty_receive_buffer();
-						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						tape_detected = 0;
+						//tape = 0;
+						//no_forward = 1;
 					}
-				}
-				break;
-			}
-			else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
-			{
-				// Drive forward:
-				alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-				go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
-			}
-			// In some kind of turn or crossing:
-			else // front < 13
-			{
-				stop(); // Stop, check directions and decide which way to go:
-				if(i == c - 1)
-				{
-					tape_detected = 0;
-					//tape = 0;
-					//no_forward = 1;
-				}
-				run_direction_command(command[i]);
-				//no_forward = 0;
-				if(i == c - 1)
-				{
-					while (!tape_detected)
+					run_direction_command(command[i]);
+					//no_forward = 0;
+					if(i == c - 1)
 					{
-						update_sensors_and_empty_receive_buffer();
-						alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-						go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						while (!tape_detected)
+						{
+							update_sensors_and_empty_receive_buffer();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						}
 					}
+					break;
 				}
-				break;
+				else if(distance_front > FRONT_MAX_DISTANCE) // front > 13
+				{
+					// Drive forward:
+					alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+					go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior );
+				}
+				// In some kind of turn or crossing:
+				else // front < 13
+				{
+					stop(); // Stop, check directions and decide which way to go:
+					if(i == c - 1)
+					{
+						tape_detected = 0;
+						//tape = 0;
+						//no_forward = 1;
+					}
+					run_direction_command(command[i]);
+					//no_forward = 0;
+					if(i == c - 1)
+					{
+						while (!tape_detected)
+						{
+							update_sensors_and_empty_receive_buffer();
+							alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+							go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+						}
+					}
+					break;
+				}
 			}
 		}
+		stop();
+		for (int i=0; i<1700; i++)
+		{
+			update_sensors_and_empty_receive_buffer();
+			alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
+			go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
+		}
+		stop();
+		missionPhase = 7;
 	}
-	stop();
-	for (int i=0; i<1700; i++)
-	{
-		update_sensors_and_empty_receive_buffer();
-		alpha = set_alpha(distance_right_back, distance_right_front, distance_left_back, distance_left_front);
-		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
-	}
-	stop();
-	missionPhase = 7;
 }
 void mission_phase_7() // Stop, also default value before start mission
 {

@@ -5,8 +5,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-#include "buffer.h"
 #include <stdlib.h>
+#include "buffer.h"
 #include "map.h"
 #include "shortest_path.h"
 
