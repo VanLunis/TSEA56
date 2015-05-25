@@ -312,16 +312,6 @@ void read(){
         input[6][i] = ((double)ADCH*AVCC/256);
     }
     
-    /* // ADC5/Sensor6 - gyro
-     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
-     _delay_ms(0.34);
-     for (int i=0; i<median_amount; i++){
-     ADCSRA |= (1<<ADIF) | (1<<ADSC);
-     _delay_us(34);
-     
-     input[7][i] = 25/12*ADCH + 300;
-     //input[7][i] = ((double)ADCH*AVCC/256);*/
-    
     // ADC7/Sensor8 - back sensor
     ADMUX = 0<<MUX4 | 0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0 | 1<<ADLAR | 1<<REFS0;
     _delay_ms(0.34);
@@ -329,8 +319,7 @@ void read(){
         ADCSRA |= (1<<ADIF) | (1<<ADSC);
         _delay_us(34);
         input[7][i] = ((double)ADCH*AVCC/256);
-    }
-    
+    }   
 }
 
 void queue_to_send(){
@@ -341,14 +330,6 @@ void queue_to_send(){
     for (int i=0; i<8; i++){
         voltage[i] = median(input[i]);
     }
-    /*
-    char temp_rear_right = (char) lookup(voltage[0], 0) - 7;
-    char temp_front_right = (char)lookup(voltage[1], 1) - 7;
-    char temp_front = (char)lookup(voltage[2], 2);
-    char temp_front_left = (char)lookup(voltage[3], 3) + 5;
-    char temp_rear_left = (char)lookup(voltage[4], 4);
-    char temp_back = (char)lookup(voltage[7], 5);
-	*/
 	
 	char temp_rear_right = (char) lookup(voltage[0], 0);
 	char temp_front_right = (char)lookup(voltage[1], 1);
@@ -364,24 +345,6 @@ void queue_to_send(){
     add_to_buffer(&SPI_send_buffer, 0xFB, temp_rear_left);
     add_to_buffer(&SPI_send_buffer, 0xF7, temp_back);
 	
-	
-	/*
-	add_to_buffer(&SPI_send_buffer, 0xFF, (char) 80*voltage[0]);
-	add_to_buffer(&SPI_send_buffer, 0xFE, (char) 80*voltage[1]);
-	add_to_buffer(&SPI_send_buffer, 0xFD, (char) 80*voltage[2]);
-	add_to_buffer(&SPI_send_buffer, 0xFC, (char) 80*voltage[3]);
-	add_to_buffer(&SPI_send_buffer, 0xFB, (char) 80*voltage[4]);
-	add_to_buffer(&SPI_send_buffer, 0xF7, (char) 80*voltage[7]);
-    //add_to_buffer(&SPI_send_buffer, 0xF6, (uint8_t)100*voltage[0]);
-    */
-    
-    /*
-     add_to_buffer(&SPI_send_buffer, 0xFF,(char) voltage[0]);
-     add_to_buffer(&SPI_send_buffer, 0xFE,(char) voltage[1]);
-     add_to_buffer(&SPI_send_buffer, 0xFD,(char) voltage[2]);
-     add_to_buffer(&SPI_send_buffer, 0xFC,(char) voltage[3]);
-     add_to_buffer(&SPI_send_buffer, 0xFB,(char) voltage[4]);
-     */
     
     //Hjultejpsensor, returnerar längd då tejp hittas (svart ger utspänning ~3.9V, ljusgrå ger ~0.2V )
     if ((voltage[5] >= 3.3) && (black == 0)){
@@ -407,48 +370,4 @@ void queue_to_send(){
         goal_detected = 0;
     }
     add_to_buffer(&SPI_send_buffer, 0xF9, goal_detected);
-    
-    //gyro, returnerar 4.5V då 300grad/sek och 0.5V då -300grad/sek
-    /*if (voltage[7]>2.5){
-     //char temp_ola_oscar = round(voltage[7]); //round(300*(-2.5)/2));
-     add_to_buffer(&SPI_send_buffer, 0xF8, (char)(300*(voltage[7]-2.5)/2));//(char)(300*(voltage[7]-2.5)/2));
-     add_to_buffer(&SPI_send_buffer, 0xF7, (char)0);
-     }
-     else{
-     add_to_buffer(&SPI_send_buffer, 0xF8, (char)0);
-     add_to_buffer(&SPI_send_buffer, 0xF7, (char)(300*(2.5-voltage[7])/2));
-     }*/
-    
-    //Beräknar vinkeln mot väggen (Alpha, i designspec.), det antas att avståndet mellan S1 och S2 är 5cm.
-    //Definierad som positiv om robot riktad åt vänster och negativ om riktad åt höger.
-    //Om positiv är tillhörande sign[i] 0, 1 om negativ.
-    /*
-     if (temp_rear_right > temp_front_right)
-     {
-     sign[0] = 1;
-     add_to_buffer(&SPI_send_buffer, 0xF6, atan((temp_rear_right - temp_front_right)/(11.5*5)));
-     }
-     else
-     {
-     sign[0] = 0;
-     add_to_buffer(&SPI_send_buffer, 0xF6, atan((temp_front_right - temp_rear_right)/(11.5*5)));
-     }
-     
-     if (temp_rear_left < temp_front_left)
-     {
-     sign[1] = 1;
-     add_to_buffer(&SPI_send_buffer, 0xF5, atan((temp_rear_left - temp_front_left)/(11.5*5)));
-     }
-     else
-     {
-     sign[1] = 0;
-     add_to_buffer(&SPI_send_buffer, 0xF5, atan((temp_front_left - temp_rear_left)/(11.5*5)));
-     }
-     
-     add_to_buffer(&SPI_send_buffer, 0xF4, sign[0]);
-     add_to_buffer(&SPI_send_buffer, 0xF3, sign[1]);
-     
-     */
-    
-    
 }

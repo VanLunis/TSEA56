@@ -21,12 +21,9 @@ volatile int8_t lwall;
 
 volatile unsigned char in_turn;
 
-//Origin is the upper left element.
 int driveable[MAP_SIZE][MAP_SIZE];
 int explored[MAP_SIZE][MAP_SIZE];
 uint8_t costmap[MAP_SIZE][MAP_SIZE];
-
-//int start[2];
 
 void shift_up();
 void shift_right();

@@ -17,8 +17,6 @@ volatile int8_t lwall = 0;
 
 volatile unsigned char in_turn = 0;
 
-// OBS: Need to shift path and end as well?!!
-
 //Shifts the elements up. (Keep in mind that lower left corner is the origin)
 //Loops through the map from top to bottom and shifts stuff up. Replaced bottom with zeros.
 void shift_up()
@@ -49,7 +47,7 @@ void shift_up()
 		}
 	}
 }
-
+//See shift up
 void shift_right(){
     for (int i = MAP_SIZE - 1; i > 0; i--)
     {
@@ -80,6 +78,7 @@ void shift_right(){
 	}
 }
 
+//See shift up
 void shift_down()
 {
     for (int i = 0; i < MAP_SIZE-1; i++)
@@ -110,6 +109,7 @@ void shift_down()
 	}
 }
 
+//See shift up
 void shift_left()
 {
     for (int i = 0; i < MAP_SIZE - 1; i++)
@@ -125,7 +125,6 @@ void shift_left()
         driveable[MAP_SIZE-1][j]= 0;
         explored[MAP_SIZE-1][j] = 0;
     }
-    //start[0]--;
     goalx--;
 	startx--;
 	firstx--;
@@ -156,8 +155,6 @@ void init_map(){
             driveable[i][j] = 0;
         }
     }
-	//explored[8][8] = 1;
-	//driveable[8][8] = 1;
 }
 
 //updates the robots orientation, call from turn-functions
@@ -249,11 +246,11 @@ void update_map()
     }
     
     // END OF MAP SHIFT
-    
+    //The cell to the left of the robot
 	int8_t lx = x-ydir;
 	int8_t ly = y+xdir;
 	
-	//analog to lx/ly for right cell
+	//Cell to the right of the robot
 	int8_t rx = x+ydir;
 	int8_t ry = y-xdir;
 	
@@ -264,6 +261,7 @@ void update_map()
     driveable[x][y] = 1;
 	explored[x][y] = 1;
 	
+	//If we are in a decision point we should update drivable too
 	if(in_turn)
 	{
 		if (!lwall)
@@ -281,55 +279,3 @@ void update_map()
 	}
 
 }
-/*
- void print_driveable()
- {
- printf("Driveable: \n");
- for (int j = MAP_SIZE-1; j >= 0; j--)
- {
- for (int i=0; i<MAP_SIZE; i++)
- {
- printf("%2d",  "%i", driveable[i][j]);
- }
- printf("\n");
- }
- 
- }
- */
-/*
- void print_explored()
- {
- printf("Explored: \n");
- for (int j = MAP_SIZE-1; j >= 0; j--)
- {
- for (int i=0; i<MAP_SIZE; i++)
- {
- printf("%2d", "%i", explored[i][j]);
- }
- printf("\n");
- }
- 
- 
- */
-/*
- void print_costmap()
- {
- printf("Costmap:\n");
- for (int j = MAP_SIZE-1; j >= 0; j--)
- {
- for (int i=0; i<MAP_SIZE; i++)
- {
- if (costmap[i][j] == 255){
- printf("##");
- }
- else{
- printf("%2d", costmap[i][j]);
- }
- }
- printf("\n");
- }
- 
- }
- */
-
-

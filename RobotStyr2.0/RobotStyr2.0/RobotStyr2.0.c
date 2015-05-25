@@ -1,9 +1,9 @@
  /*
  * RobotStyr2.0.c
  *
- * Created: 11/5 - 2015
+ * Created: 25/5 - 2015
  *
- * Try to merge new functionality (i.e. map), step by step into working control code
+ * final code
  *
  */
 
@@ -150,8 +150,8 @@ void init_control_module(void)
 };
 void reset_values()
 {
-	OCR1A = 0; // KLO
-	OCR1B = 0; // KLO
+	OCR1A = 0; // grip
+	OCR1B = 0; // grip
 	OCR2A = 0;
 	OCR2B = 0;
 	
@@ -207,11 +207,6 @@ void reset_values()
 // Functions that are used in interrupts caused by the SPI-bus
 void send_to_master(struct data_buffer* my_buffer)
 {
-    /*if (fetch_from_buffer(my_buffer).type == null_data_byte.type && fetch_from_buffer(my_buffer).val==null_data_byte.val)
-     {
-     transmission_status = 0;
-     return ;
-     }*/
     //if Transmission not yet started: fetch type and put it in SPDR.
     if(transmission_status == 0)
     {
@@ -361,7 +356,7 @@ void send_explored()
 
 // In autonomous mode: get sensor values from receive buffer
 void update_values_from_sensor(){
-    
+    // this function reads one data byte from data bus
     if(!buffer_empty(&receive_buffer))
     {
         unsigned char temp_char = fetch_from_buffer(&receive_buffer).type;
@@ -399,7 +394,7 @@ void update_values_from_sensor(){
                 
             case 0xF9:  // tejp sensor floor:
 				tape = fetch_from_buffer(&receive_buffer).val;
-				if (tape == 1)
+				if (tape == 1) // update goal etc
 				{
 					if (missionPhase == 1)
 					{
@@ -447,7 +442,7 @@ void update_values_from_sensor(){
     } // end of if
 }
 void update_sensors_and_empty_receive_buffer()
-{
+{	// Reads from the data bus until its empty
     while(!buffer_empty(&receive_buffer))
     {
         update_values_from_sensor();
@@ -527,8 +522,8 @@ void forward(){
 }
 void forward_slow(){
     PORTC = (1<<PORTC1) | (1<<PORTC0);
-    set_speed_right_wheels(30);//SLOW_SPEED);
-    set_speed_left_wheels(30);//SLOW_SPEED);
+    set_speed_right_wheels(30);
+    set_speed_left_wheels(30);
 }
 void rotate_left(int speed){
     PORTC = (0<<PORTC1) | (1<<PORTC0); // sets right forward, left backwards
@@ -598,7 +593,7 @@ void sharp_right(){
     
 }
 
-// CHANGED TO SLOW SPEED FROM FULL SPEEDE ON 5/19/2015 /Alex
+
 void backwards(){
     PORTC = (0<<PORTC1) | (0<<PORTC0);
     set_speed_right_wheels(SLOW_SPEED);
@@ -677,6 +672,7 @@ void go_forward(double * ptr_e, double *ptr_e_prior, double *ptr_e_prior_prior, 
 }
 double controller(double e, double alpha, double e_prior, double alpha_prior, double e_prior_prior, double alpha_prior_prior){
     
+	// calculates the control signal u via double PD-controller
     double derivative_e = (e - e_prior/2 - e_prior_prior/2)/DELTA_T;
     double derivative_alpha = (alpha - alpha_prior/2 - alpha_prior_prior/2 )/DELTA_T;
     
@@ -685,6 +681,7 @@ double controller(double e, double alpha, double e_prior, double alpha_prior, do
 }
 void setMotor(double u, double alpha){
     
+	// set steering depending on control signal u
     if ( u < NEGATIVE_LIMIT){sharp_right();}
     else if ( u < SLIGHT_NEGATIVE_LIMIT){slight_right();}
     else if ( u < SLIGHT_POSITIVE_LIMIT){
@@ -702,7 +699,7 @@ void setMotor(double u, double alpha){
     
 }
 double set_alpha(unsigned char distance_right_back, unsigned char distance_right_front, unsigned char distance_left_back, unsigned char distance_left_front){
-#define ALPHA_MULT_CONSTANT 10 // a constant to increase alpha to make greater impact on the PD-controller
+	#define ALPHA_MULT_CONSTANT 10 // a constant to increase alpha to make greater impact on the PD-controller
     double alpha;
     if ( distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE) // When one of the right hand side sensors can't see a wall alpha is calculated from the left hand side sensors
     {
@@ -731,7 +728,7 @@ void turn_forward()
 	stop(); _delay_ms(50); _delay_ms(50);
 	if(distance_front > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE)
 	{
-		// FORWARD
+		// FORWARD until front side sensors are short
 		while (!((distance_front < FRONT_MAX_DISTANCE) || 
 		(distance_left_front < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE)))
 		{
@@ -745,6 +742,8 @@ void turn_forward()
 	
 	stop(); _delay_ms(50); _delay_ms(50);
 	
+	
+	// control FORWARD until back side sensors are short and driven into the next square
 	if(distance_front > WALLS_MAX_DISTANCE)
 	{
 		while (!((distance_front < FRONT_MAX_DISTANCE) || 
@@ -763,7 +762,9 @@ void turn_forward()
 // Turn back:
 void turn_back()
 {
-    update_orientation('b');
+    update_orientation('b'); 
+	
+	// control on correct walls == do correct turn_back
 	if(lwall && rwall)
 	{
 		turn_back_control_on_both_walls();
@@ -780,20 +781,12 @@ void turn_back()
 	{
 		turn_back_control_on_zero_walls();
 	}
-	/*
-    if(distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE
-       && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE)
-    {
-        turn_back_control_on_both_walls();
-    }*/
-    
 }
 void turn_back_control_on_both_walls()
 {
     stop();
     _delay_ms(50);
     _delay_ms(50);
-	
 	
     // Closer to left wall then right? Then rotate left 180 degrees! :
     if ((distance_right_back + distance_right_front) > (distance_left_back + distance_left_front))
@@ -806,9 +799,9 @@ void turn_back_control_on_both_walls()
 		_delay_ms(50);
 		if(fwall)
 		{
+			// rotate until difference between side sensors dont differ to much
 			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
 			{
-            
 				rotate_left(30);
 				update_sensors_and_empty_receive_buffer();	
 			}
@@ -822,6 +815,7 @@ void turn_back_control_on_both_walls()
 			}
 		}
 	}
+	
     // Closer to right wall then left? Then rotate right 180 degrees! :
     else
     {
@@ -831,8 +825,9 @@ void turn_back_control_on_both_walls()
 		stop();
 		_delay_ms(50);
 		_delay_ms(50);
+		// rotate until difference between side sensors dont differ to much
 		if(fwall)
-		{
+		{	
 			while ( !(distance_front > 30 && abs(distance_right_back - distance_right_front) < ABS_VALUE_RIGHT && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT))
 			{
 				
@@ -850,14 +845,15 @@ void turn_back_control_on_both_walls()
 		}
 	}
     driven_distance = 0;
-    // Need to align? //
     stop();
     _delay_ms(50);
     _delay_ms(50);
     update_sensors_and_empty_receive_buffer();
     
+	// correct the position in the corridor: 
     while (!(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && abs(distance_left_back - distance_left_front) < 1.2))
     {
+		// rotate right if back side too big
         if(distance_left_back > distance_left_front)
         {
             rotate_right(40);
@@ -883,51 +879,7 @@ void turn_back_control_on_right_wall()
 		turn_right_control_on_back_wall();
 	}
 	turn_left_control_on_right_wall();
-	/*
-	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
-	{
-		rotate_right(60);
-		update_sensors_and_empty_receive_buffer();
-	}
-	driven_distance = 0;
-	// Need to align? //
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	update_sensors_and_empty_receive_buffer();
 	
-	while (!(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
-	{
-		if (distance_front < FRONT_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)
-		{
-			if(distance_right_front > distance_right_back)
-			{
-				while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_right(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			else
-			{
-				while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_right(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			
-		}
-		else if(distance_left_front > distance_left_back)
-		{
-			rotate_right(40);
-		}
-		else
-		{
-			rotate_right(40);
-		}
-		update_sensors_and_empty_receive_buffer();
-	}*/
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -943,51 +895,7 @@ void turn_back_control_on_left_wall()
 		turn_left_control_on_back_wall();
 	}
 	turn_left_control_on_left_wall();
-	/*
-	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_LEFT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
-	{
-		rotate_left(60);
-		update_sensors_and_empty_receive_buffer();
-	}
-	driven_distance = 0;
-	// Need to align? //
-	stop();
-	_delay_ms(50);
-	_delay_ms(50);
-	update_sensors_and_empty_receive_buffer();
-	
-	while (!(distance_front > 30 && abs(distance_left_back - distance_left_front) < 1.2 && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
-	{
-		if (distance_front < FRONT_MAX_DISTANCE || distance_left_back > WALLS_MAX_DISTANCE || distance_left_front > WALLS_MAX_DISTANCE)
-		{
-			if(distance_left_front > distance_left_back)
-			{
-				while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_LEFT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_left(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			else
-			{
-				while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_LEFT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
-				{
-					rotate_left(60);
-					update_sensors_and_empty_receive_buffer();
-				}
-			}
-			
-		}
-		else if(distance_left_front > distance_left_back)
-		{
-			rotate_left(40);
-		}
-		else
-		{
-			rotate_left(40);
-		}
-		update_sensors_and_empty_receive_buffer();
-	}*/
+
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -1010,6 +918,8 @@ void turn_back_control_on_zero_walls()
 void turn_left()
 {
 	update_orientation('l');
+	
+	// choose correct left turn:
 	if(fwall)
 	{
 		turn_left_control_on_right_wall();
@@ -1033,20 +943,27 @@ void turn_left_control_on_right_wall()
     _delay_ms(50);
     _delay_ms(50);
     
+	
+	// rotate left until side sensors dont differ
     while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE))
     {
         rotate_left(60);
         update_sensors_and_empty_receive_buffer();
     }
     driven_distance = 0;
-    // Need to align? //
+	
+	
+    // Allign to robot position correct in corridor
     stop();
     _delay_ms(50);
     _delay_ms(50);
     update_sensors_and_empty_receive_buffer();
     
+	
+	
     while (!(distance_front > 30 && abs(distance_right_back - distance_right_front) < 1.2 && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
-    {
+    { // while angle exist:
+		
         if (distance_front < FRONT_MAX_DISTANCE || distance_right_back > WALLS_MAX_DISTANCE || distance_right_front > WALLS_MAX_DISTANCE)
         {
             if(distance_right_front > distance_right_back)
@@ -1096,6 +1013,7 @@ void turn_left_control_on_zero_walls()
     _delay_ms(50);
     _delay_ms(50);
     
+	// Rotate while all sensors are long
     while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
     {
         rotate_left(60);
@@ -1107,6 +1025,7 @@ void turn_left_control_on_zero_walls()
     _delay_ms(50);
     _delay_ms(50);
     
+	// short hard-coded rotate:
     rotate_left(60);
     for (int i = 0; i<150; i++){ _delay_ms(1);}
     //  STOPP
@@ -1129,6 +1048,7 @@ void turn_left_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
     
+	// Rotate while all sensors are long
     while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
     {
         rotate_left(60);
@@ -1139,7 +1059,8 @@ void turn_left_control_on_back_wall()
     stop();
     _delay_ms(50);
     _delay_ms(50);
-    
+	
+	// short hard-coded rotate:
     rotate_left(60);
     for (int i = 0; i<45; i++){ _delay_ms(1);}
     //  STOPP
@@ -1153,7 +1074,7 @@ void turn_left_control_on_left_wall()
 	_delay_ms(50);
 	_delay_ms(50);
 	
-	// Rotate left:
+	// rotate left until side sensors dont differ
 	while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && 
 	distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back < WALLS_MAX_DISTANCE && distance_left_front < WALLS_MAX_DISTANCE))
 	{
@@ -1161,7 +1082,7 @@ void turn_left_control_on_left_wall()
 		update_sensors_and_empty_receive_buffer();
 	}
 	driven_distance = 0;
-	// Need to align? //
+	 // Allign to robot position correct in corridor
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -1209,6 +1130,8 @@ void turn_left_control_on_left_wall()
 void turn_right()
 {
 	update_orientation('r');
+	
+	// choose correct right turn:
 	if(fwall && !rwall)
 	{
 		turn_right_control_on_left_wall();
@@ -1232,14 +1155,15 @@ void turn_right_control_on_left_wall()
     _delay_ms(50);
     _delay_ms(50);
     
-    // Rotate right:
+	// rotate rotate until side sensors dont differ
     while(!(distance_front > WALLS_MAX_DISTANCE && abs(distance_left_back - distance_left_front) < ABS_VALUE_RIGHT && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE))
     {
         rotate_right(50);
         update_sensors_and_empty_receive_buffer();
     }
 	driven_distance = 0;
-	// Need to align? //
+
+	// Allign to robot position correct in corridor
     stop();
     _delay_ms(50);
     _delay_ms(50);
@@ -1295,6 +1219,7 @@ void turn_right_control_on_zero_walls()
     _delay_ms(50);
     _delay_ms(50);
     
+	// rotate until all sensors are long
     while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back > WALLS_MAX_DISTANCE))
     {
         rotate_right(60);
@@ -1328,6 +1253,7 @@ void turn_right_control_on_back_wall()
     _delay_ms(50);
     _delay_ms(50);
     
+	// rotate until all sensors are long
     while (!( distance_front > 30 && distance_right_back > WALLS_MAX_DISTANCE && distance_right_front > WALLS_MAX_DISTANCE && distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_back < WALLS_MAX_DISTANCE))
     {
         rotate_right(60);
@@ -1352,6 +1278,7 @@ void turn_right_control_on_right_wall()
 	_delay_ms(50);
 	_delay_ms(50);
 	
+	// rotate rotate until side sensors dont differ
 	while (!(distance_front > WALLS_MAX_DISTANCE && abs(distance_right_back - distance_right_front) < ABS_VALUE_LEFT && 
 	distance_left_back > WALLS_MAX_DISTANCE && distance_left_front > WALLS_MAX_DISTANCE && distance_right_back < WALLS_MAX_DISTANCE && distance_right_front < WALLS_MAX_DISTANCE))
 	{
@@ -1359,7 +1286,8 @@ void turn_right_control_on_right_wall()
 		update_sensors_and_empty_receive_buffer();
 	}
 	driven_distance = 0;
-	// Need to align? //
+		
+	// Allign to robot position correct in corridor
 	stop();
 	_delay_ms(50);
 	_delay_ms(50);
@@ -1405,12 +1333,12 @@ void turn_right_control_on_right_wall()
 }
 
 // Claw functions:
-void open_claw_gap() // KLO
+void open_claw_gap() // claw
 {
 	OCR1B = 0x0015;
 	
 }
-void close_claw_gap() // KLO{
+void close_claw_gap() // claw
 	{
 		
 		OCR1B = 0x0010;
@@ -1424,9 +1352,7 @@ void claw_full_open(){
 // MAZE FUNCTIONS: -----------------------------------------------
 
 unsigned char get_possible_directions()
-{
-    //TODO: Check in all crossings/turns if this really shows correct values
-    
+{   
     unsigned char possible_directions = 0x00;
     /*
      
@@ -1470,8 +1396,12 @@ unsigned char get_possible_directions()
     }
     return possible_directions;
 }
-void make_direction_decision() //OBS: added some code to try to solve if the back sensor doesn't behave well
+
+//Makes decision in decision nodes
+void make_direction_decision() 
 {
+	// Makes correct decision in turns:
+	
     unsigned char possible_directions = get_possible_directions();
     add_to_buffer(&send_buffer, 0xF8, possible_directions);
 	
@@ -1487,6 +1417,8 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 	send_explored();
 	add_unvisited();
 	check_if_visited_explored();
+	
+	
 	add_to_buffer(&send_buffer, 0x70, (char) un+1);
 	for (int i=0; i<un; i++)
 	{
@@ -1539,6 +1471,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 		}
 		else
 		{
+			//Go shortest path back to last unexplored cell not taken
 			point loc = {x, y};
 			floodfill(loc, unvisited[un-1]);
 			traceBack(costmap, unvisited[un-1]);
@@ -1561,6 +1494,7 @@ void make_direction_decision() //OBS: added some code to try to solve if the bac
 		}
 	}		 
 }
+//Runs commands for a shortest path sequence
 void run_direction_command(unsigned char direction_command)
 {
 	unsigned char possible_directions = get_possible_directions();
@@ -1882,7 +1816,6 @@ void mission_phase_3() // Grab the object and turn 180 degrees
 		go_forward(&e, &e_prior, &e_prior_prior, &alpha, &alpha_prior, &alpha_prior_prior);
 	}
 	driven_distance = 0;
-	// TODO: Add code for grabbing object
 	get_possible_directions();
 	stop();
 	

@@ -9,11 +9,16 @@ int8_t tmply;
 int8_t tmprx;
 int8_t tmpry;
 
+//If traceBack have been used this function creates a set of commands
+//that the robot can interpret to actually travel the path. 
+//This is done by checking in what direction the next point in the path is
+//The robots oriantation is also used.
 void getCommands(point end){
 	int8_t tmpxdir = xdir;
 	int8_t tmpydir = ydir;
 	c = 0;
 
+	
     for (int i=0; i < costmap[end.x][end.y]; i++)
     {   
 			tmplx = path[i].x - tmpydir;
@@ -26,12 +31,10 @@ void getCommands(point end){
             {
 
                 if(tmpxdir == 0 && tmpydir == 1){
-                  //  printf("Turn right, ");
                     command[c] = 'r';
                     c++;
                 }
                 else if(tmpxdir == 0 && tmpydir == -1){
-                   // printf("Turn left, ");
                     command[c] = 'l';
                     c++;
                 }
@@ -41,29 +44,23 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-            //    printf("Go forwards.\n");
 				else if(tmpxdir == 1 && tmpydir == 0 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
 					c++;
 				}
 				tmpxdir = 1;
-				tmpydir = 0;
-				
-             
-
+				tmpydir = 0;    
             }
 			
 			//GO WEST
             else if(path[i].x > path[i+1].x)
             {
                 if(tmpxdir == 0 && tmpydir == 1){
-                //   printf("Turn left, ");
                     command[c] = 'l';
                     c++;
                 }
                 else if(tmpxdir == 0 && tmpydir == -1){
-             //       printf("Turn right, ");
                     command[c] = 'r';
                     c++;
                 }
@@ -73,27 +70,23 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-           //    printf("Go forwards.\n");
 				if(tmpxdir == -1 && tmpydir == 0 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
 					c++;
 				}
 				tmpxdir = -1;
-				tmpydir = 0;
-				
+				tmpydir = 0;			
             }
 			
 			//GO NORTH
             else if(path[i].y < path[i+1].y)
             {
                 if(tmpxdir == 1 && tmpydir == 0){
-                    //printf("Turn left, ");
                     command[c] = 'l';
                     c++;
                 }
                 else if(tmpxdir == -1 && tmpydir == 0){
-                    //printf("Turn right, ");
                     command[c] = 'r';
                     c++;
                 }
@@ -103,7 +96,6 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-				//    printf("Go forwards.\n");
 				if(tmpxdir == 0 && tmpydir == 1 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
@@ -117,13 +109,11 @@ void getCommands(point end){
             else if(path[i].y > path[i+1].y)
             {
                 if(tmpxdir == 1 && tmpydir == 0){
-                  //  printf("Turn right, ");
                     command[c] = 'r';
                     c++;
 
                 }
                 else if(tmpxdir == -1 && tmpydir == 0){
-                   // printf("Turn left, ");
                     command[c] = 'l';
                     c++;
 
@@ -134,7 +124,6 @@ void getCommands(point end){
 					command[c] = 'b';
 					c++;
 				}
-				//    printf("Go forwards.\n");
 				else if(tmpxdir == 0 && tmpydir == -1 && !((driveable[tmplx][tmply] == 0) && (driveable[tmprx][tmpry] == 0)))// In decision node?
 				{
 					command[c] = 'f';
@@ -143,16 +132,16 @@ void getCommands(point end){
 				tmpxdir = 0;
 				tmpydir = -1;
         }
-        //printf("Elem %i in path is: %i, %i\n", i, path[i].x, path[i].y);
     }
 }
 
+
+//Returns a path from the start to the end by walking from the end
+//Through squares such that the cost between all elements in the path is one
 void traceBack(int8_t costmap[17][17], point end)
 {
     //Distance is equal to cost
     int8_t cost = costmap[end.x][end.y];
-    //printf("COST for end: %i", cost);
-    //point path[cost];
     point p = end;
     path[cost] = p;
 
@@ -161,7 +150,6 @@ void traceBack(int8_t costmap[17][17], point end)
         //WEST
         temp.y = p.y;
         if (costmap[p.x-1][p.y] == cost-1){
-       //     printf("W\n");
             temp.x = p.x-1;
             p = temp;
             path[cost-1] = temp;
@@ -172,7 +160,6 @@ void traceBack(int8_t costmap[17][17], point end)
         else if (costmap[p.x+1][p.y] == cost-1){
             temp.x = p.x+1;
             p = temp;
-       //     printf("E\n");
             path[cost-1] = temp;
             cost--;
         }
@@ -184,8 +171,6 @@ void traceBack(int8_t costmap[17][17], point end)
             temp.x = p.x;
             temp.y = p.y - 1;
             p = temp;
-            //printf("S\n");
-
             path[cost-1] = temp;
             cost--;
         }
@@ -195,7 +180,6 @@ void traceBack(int8_t costmap[17][17], point end)
             temp.x = p.x;
             temp.y = p.y + 1;
             p = temp;
-            //printf("N\n");
             path[cost-1] = temp;
             cost--;
         }
@@ -203,6 +187,9 @@ void traceBack(int8_t costmap[17][17], point end)
     return;
 }
 
+
+//Fills the map with the cost associated with travelling 
+//from the start point, until the end point is covered.
 void floodfill(point start, point end)
 {
     for (int i=0; i<17;i++){
@@ -210,7 +197,6 @@ void floodfill(point start, point end)
             costmap[i][j] = 255;
         }
     }
-    //printf(" (%i, %i), (%i, %i)", start.x, start.y, end.x, end.y);
     int8_t notfinished = 1;
     point c = start;
     int8_t q = 0;
@@ -224,7 +210,8 @@ void floodfill(point start, point end)
         queue[k] = temp;
 
     }
-
+	//Returns the cost for the point p
+	//by checking the cost if it's neighbors
     int8_t getcost(point p){
         uint8_t lcost = 255;
         //WEST
@@ -242,7 +229,6 @@ void floodfill(point start, point end)
         }
 
         //SOUTH
-      //  printf ("COST TO THE SOUTH: %i\n", costmap[p.x][p.y-1]);
         if (p.y > 0){
             if (costmap[p.x][p.y-1] < lcost){
                 lcost = costmap[p.x][p.y-1]+1;
@@ -258,10 +244,10 @@ void floodfill(point start, point end)
         }
         return lcost;
     }
-
+	//Sets the cost of a square and adds elements
+	//to the queue if we are not finished
     void fill_square(point p, int8_t cost)
     {
-        //printf("x:%i y:%i%",p.x, p.y);
         point temp;
 
         if (p.x == end.x && p.y == end.y){
@@ -274,18 +260,13 @@ void floodfill(point start, point end)
         else
         {
             costmap[p.x][p.y] = cost;
-
-      //      printf("updated (%i, %i)'s cost  to %i \n ", p.x, p.y, cost);
-
             temp.y = p.y;
 
             //WEST
-            //printf("C: x:%i, y:%i", c.x, c.y);
             if (p.x > 0){
                 if ((driveable[p.x-1][p.y] == 1)
                         && (costmap[p.x-1][p.y] > cost+1)){
                     temp.x = p.x - 1;
-                   // printf("WEST x:%i y:%i%",p.x, p.y);
                     queue[q] = temp;
                     q++;
                 }
@@ -295,7 +276,6 @@ void floodfill(point start, point end)
             if (p.x < 16){
                 if ((driveable[p.x+1][p.y] == 1)
                         && (costmap[p.x+1][p.y] > cost+1)){
-                   // printf("EAST x:%i y:%i%",p.x, p.y);
                     temp.x = p.x+1;
                     queue[q] = temp;
                     q++;
@@ -309,7 +289,6 @@ void floodfill(point start, point end)
                 if ((driveable[p.x][p.y-1] == 1)
                         && (costmap[p.x][p.y-1] > cost+1)){
                     temp.y = p.y - 1;
-                //    printf("SOUTH x:%i y:%i%",p.x, p.y);
                     queue[q] = temp;
                     q++;
 
@@ -318,12 +297,9 @@ void floodfill(point start, point end)
 
 
             //NORTH
-     //       printf("NORTH y+1: d:%i e:%i cm:% c:%i i:%i\n", driveable[p.x][p.y+1], explored[p.x][p.y+1], costmap[p.x][p.y+1], cost, i);
-
             if (p.y < 16){
                 if ((driveable[p.x][p.y+1] == 1)
                         && (costmap[p.x][p.y+1] > cost+1)){
-               //     printf("NORTH - SURPRISE MF x:%i y:%i%",p.x, p.y);
                     temp.y = p.y + 1;
                     queue[q] = temp;
                     q++;
@@ -341,17 +317,14 @@ void floodfill(point start, point end)
         return;
     }
 
-
+	//the main loop of the algorithm 
+	//Fills squares with costs until we find the endpoint
     fill_square(c, cost);
     while (notfinished){
- //       printf("F SQUARE: i:%i x:%i y:%i, cx:%i, cy:%i \n%", i, queue[i].x, queue[i].y, c.x, c.y);
         c = queue[i];
         fill_square(c, getcost(c));
         i++;
     }
-
-    //path[cost] = traceBack();
-
     return;
 
 }
